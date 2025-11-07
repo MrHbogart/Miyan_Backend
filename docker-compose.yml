@@ -1,21 +1,28 @@
 services:
+  web:
+    build: .
+    container_name: miyan_web
+    restart: always
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000
+    ports:
+      - "8003:8000"        # You can map 8003 → 8000 internally
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+
   db:
     image: postgres:15
-    container_name: miyan_postgres
-    restart: unless-stopped
-    ports:
-      - "${POSTGRES_PORT}:5432"
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    container_name: miyan_db
+    restart: always
+    env_file:
+      - .env
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 5s
-      retries: 5
-      timeout: 5s
+    ports:
+      - "5435:5432"
 
 volumes:
   postgres_data:
