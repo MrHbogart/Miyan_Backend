@@ -1,15 +1,13 @@
 from django.db import models
-from core.models import TimeStampedModel
+from core.models import BaseMenu
 
-class MiyanBereshtMenu(TimeStampedModel):
+class MiyanBereshtMenu(BaseMenu):
     CATEGORY_CHOICES = [
         ('breakfast', 'Breakfast'),
         ('lunch', 'Lunch'),
         ('dinner', 'Dinner'),
         ('dessert', 'Dessert'),
     ]
-    name = models.CharField(max_length=200)
-    description = models.TextField(blank=True)
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='lunch')
     price = models.DecimalField(max_digits=8, decimal_places=2)
     available = models.BooleanField(default=True)
@@ -22,3 +20,4 @@ class MiyanBereshtMenu(TimeStampedModel):
 
     def __str__(self):
         return f"{self.name} - {self.price}"
+

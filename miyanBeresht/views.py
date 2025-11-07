@@ -5,4 +5,4 @@ from .serializers import MiyanBereshtMenuSerializer
 class MiyanBereshtMenuViewSet(viewsets.ModelViewSet):
     queryset = MiyanBereshtMenu.objects.all().order_by('id')
     serializer_class = MiyanBereshtMenuSerializer
-    permission_classes = [permissions.AllowAny]  # change to IsAuthenticated for admin-only
+    permission_classes = [permissions.AllowAny]
