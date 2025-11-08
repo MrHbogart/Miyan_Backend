@@ -6,7 +6,7 @@ class MiyanGallery(models.Model):
     image = models.ImageField(upload_to='gallery/')
     order = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
-	updated_at = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['order']
