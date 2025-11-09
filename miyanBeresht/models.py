@@ -9,7 +9,7 @@ class MiyanBereshtMenu(BaseMenu):
         ('dessert', 'Dessert'),
     ]
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='lunch')
-    price = models.DecimalField(max_digits=8, decimal_places=2)
+    price = models.DecimalField(max_digits=16, decimal_places=2)
     available = models.BooleanField(default=True)
     image = models.ImageField(upload_to='menu_images/', blank=True, null=True)
 
