@@ -19,5 +19,5 @@ class MiyanMadiMenu(BaseMenu):
         verbose_name_plural = "Miyan Madi Menu"
 
     def __str__(self):
-        return f"{self.name} - {self.price}"
+        return f"{self.name_en} - {self.price}"
 
