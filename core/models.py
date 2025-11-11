@@ -1,6 +1,7 @@
 from django.db import models
 
 class BaseMenu(models.Model):
+
     # Main title fields
     title_fa = models.CharField(max_length=255, verbose_name="Title (Persian)")
     title_en = models.CharField(max_length=255, verbose_name="Title (English)")
