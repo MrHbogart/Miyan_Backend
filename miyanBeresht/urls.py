@@ -8,5 +8,5 @@ router.register(r'beresht_sections', BereshtMenuSectionViewSet, basename='beresh
 router.register(r'beresht_items', BereshtMenuItemViewSet, basename='beresht-items')
 
 urlpatterns = [
-    path('api/', include(router.urls)),
+    path('', include(router.urls)),
 ]

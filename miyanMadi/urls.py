@@ -8,5 +8,5 @@ router.register(r'madi_sections', MadiMenuSectionViewSet, basename='madi-section
 router.register(r'madi_items', MadiMenuItemViewSet, basename='madi-items')
 
 urlpatterns = [
-    path('api/', include(router.urls)),
+    path('', include(router.urls)),
 ]
