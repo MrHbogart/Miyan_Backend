@@ -38,74 +38,61 @@ class BereshtMenuSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         """Transform to match frontend structure exactly"""
         data = super().to_representation(instance)
-        
         # Transform to match your frontend structure
+        title_fa = data.get('title_fa')
+        title_en = data.get('title_en')
+        subtitle_fa = data.get('subtitle_fa')
+        subtitle_en = data.get('subtitle_en')
+
+        def build_item(item):
+            # item here is a dict produced by the child serializer
+            image = item.get('image_url') or item.get('image') or '/images/medium/default-menu.jpg'
+            price_val = item.get('price')
+            return {
+                'name': {
+                    'fa': item.get('name_fa'),
+                    'en': item.get('name_en')
+                },
+                'description': {
+                    'fa': item.get('description_fa') or '',
+                    'en': item.get('description_en') or ''
+                },
+                'price': {
+                    'fa': item.get('price_fa') or (str(price_val) if price_val is not None else ''),
+                    'en': item.get('price_en') or (str(price_val) if price_val is not None else '')
+                },
+                'image': image
+            }
+
+        sections_out = []
+        for section in data.get('sections', []):
+            if not section.get('is_active'):
+                continue
+            items = [build_item(item) for item in section.get('items', []) if item.get('is_available')]
+            sections_out.append({
+                'title': {'fa': section.get('title_fa'), 'en': section.get('title_en')},
+                'items': items
+            })
+
+        todays_items = []
+        for section in data.get('sections', []):
+            for item in section.get('items', []):
+                if item.get('is_todays_special') and item.get('is_available'):
+                    todays_items.append(build_item(item))
+
         transformed = {
-            'title': {
-                'fa': data['title_fa'],
-                'en': data['title_en']
-            },
-            'subtitle': data['subtitle_fa'] and data['subtitle_en'] and {
-                'fa': data['subtitle_fa'],
-                'en': data['subtitle_en']
-            } or None,
-            'sections': [
-                {
-                    'title': {
-                        'fa': section['title_fa'],
-                        'en': section['title_en']
-                    },
-                    'items': [
-                        {
-                            'name': {
-                                'fa': item['name_fa'],
-                                'en': item['name_en']
-                            },
-                            'description': {
-                                'fa': item['description_fa'] or '',
-                                'en': item['description_en'] or ''
-                            },
-                            'price': {
-                                'fa': item['price_fa'] or str(item['price']),
-                                'en': item['price_en'] or str(item['price'])
-                            },
-                            'image': item['image_url'] or (item['image'] and item['image'].url) or '/images/medium/default-menu.jpg'
-                        }
-                        for item in section['items']
-                        if item['is_available']
-                    ]
-                }
-                for section in data['sections']
-                if section['is_active']
-            ],
+            'title': {'fa': title_fa, 'en': title_en},
+            'subtitle': ({'fa': subtitle_fa, 'en': subtitle_en} if (subtitle_fa or subtitle_en) else None),
+            'sections': sections_out,
             'todays': {
                 'title': {'fa': 'آیتم‌های تازه امروز', 'en': "Today's Fresh"},
                 'sections': [
                     {
                         'title': {'fa': 'پیشنهاد امروز', 'en': "Today's Special"},
-                        'items': [
-                            {
-                                'name': {
-                                    'fa': item['name_fa'],
-                                    'en': item['name_en']
-                                },
-                                'description': {
-                                    'fa': item['description_fa'] or '',
-                                    'en': item['description_en'] or ''
-                                },
-                                'price': {
-                                    'fa': item['price_fa'] or str(item['price']),
-                                    'en': item['price_en'] or str(item['price'])
-                                },
-                                'image': item['image_url'] or (item['image'] and item['image'].url) or '/images/medium/default-menu.jpg'
-                            }
-                            for section in data['sections']
-                            for item in section['items']
-                            if item['is_todays_special'] and item['is_available']
-                        ]
+                        'items': todays_items
                     }
                 ]
             }
         }
-        
+
         return transformed
