@@ -9,9 +9,9 @@ class CoreConfig(AppConfig):
         # create default groups if they don't exist yet (safe on migrations)
         try:
             from django.contrib.auth.models import Group
-
             Group.objects.get_or_create(name='staff')
             Group.objects.get_or_create(name='managers')
+            
         except Exception:
             # during initial migrate the auth tables may not be ready; ignore errors
             pass

@@ -69,20 +69,19 @@ class MenuItem(models.Model):
     
     # Pricing
     price = models.DecimalField(
-        max_digits=10, 
+        max_digits=32, 
         decimal_places=2, 
         verbose_name="Price",
         help_text="Price in the base currency"
     )
     price_fa = models.CharField(
         max_length=50, 
-        blank=True, 
         verbose_name="Formatted Price (Persian)",
         help_text="Formatted price for display in Persian"
     )
     price_en = models.CharField(
         max_length=50, 
-        blank=True, 
+        blank=True,
         verbose_name="Formatted Price (English)",
         help_text="Formatted price for display in English"
     )

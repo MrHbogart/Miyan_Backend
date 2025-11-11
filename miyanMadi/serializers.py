@@ -1,4 +1,3 @@
-# miyanMadi/serializers.py
 from rest_framework import serializers
 from .models import MadiMenu, MadiMenuSection, MadiMenuItem
 

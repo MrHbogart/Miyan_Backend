@@ -1,11 +1,6 @@
-"""
-Django settings for config project.
-"""
-
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-from datetime import timedelta
 
 # Load environment variables from .env
 BASE_DIR = Path(__file__).resolve().parent.parent
