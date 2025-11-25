@@ -209,3 +209,6 @@ __marimo__/
 # Docker
 postgres_data/
 __pycache__/
+
+staticfiles/
+media/

@@ -4,6 +4,16 @@ This repository contains a Django REST Framework backend scaffolded for the Mian
 
 Quick start (macOS / zsh):
 
+0. Configure environment variables (copy the example file and tweak as needed):
+
+```bash
+cp .env.example .env
+# edit DJANGO_SECRET_KEY, allowed hosts, etc.
+```
+
+`DJANGO_DEBUG=True` (default in the example) keeps everything running locally with SQLite and HTTP.  
+Setting `DJANGO_DEBUG=False` switches the app to PostgreSQL credentials from `.env` and enforces HTTPS-secure cookies for deployment behind gunicorn/nginx.
+
 1. Create/activate virtualenv (already created in this workspace as `.venv`):
 
 ```bash
@@ -30,4 +40,4 @@ API endpoints are exposed under `/api/` (browsable API available). JWT token end
 - POST `/api/token/refresh/` — refresh access token
 
 Notes:
-- This is a development setup. Review `config/settings.py` for SimpleJWT and CORS settings before deploying to production.
+- This is a development setup. Adjust `.env` before deploying (especially `DJANGO_ALLOWED_HOSTS`, `DJANGO_CORS_ALLOWED_ORIGINS`, Postgres credentials, etc.).

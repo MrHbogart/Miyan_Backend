@@ -6,13 +6,22 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
 
+# Utility helpers -----------------------------------------------------------
+def get_list_from_env(var_name, default):
+    """Split comma separated env vars into a clean list."""
+    raw_value = os.getenv(var_name)
+    if raw_value is None:
+        return default
+    return [item.strip() for item in raw_value.split(',') if item.strip()]
+
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'insecure-default-key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DJANGO_DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = get_list_from_env('DJANGO_ALLOWED_HOSTS', ['localhost', '127.0.0.1'])
 
 # Application definition
 INSTALLED_APPS = [
@@ -63,16 +72,24 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'miyan_db'),
-        'USER': os.getenv('POSTGRES_USER', 'miyan_user'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'miyan_password'),
-        'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
-        'PORT': os.getenv('POSTGRES_PORT', '5432'),
+if DEBUG:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('POSTGRES_DB', 'miyan_db'),
+            'USER': os.getenv('POSTGRES_USER', 'miyan_user'),
+            'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'miyan_password'),
+            'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
+            'PORT': os.getenv('POSTGRES_PORT', '5432'),
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -120,22 +137,32 @@ REST_FRAMEWORK = {
 }
 
 # CORS settings
-CORS_ALLOWED_ORIGINS = [
-    'https://miyan.smartcareer.ir',
-    'https://www.miyan.smartcareer.ir',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-]
+CORS_ALLOWED_ORIGINS = get_list_from_env(
+    'DJANGO_CORS_ALLOWED_ORIGINS',
+    [
+        'https://miyan.smartcareer.ir',
+        'https://www.miyan.smartcareer.ir',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+    ],
+)
 
 CORS_ALLOW_CREDENTIALS = True
 
 # CSRF settings
-CSRF_TRUSTED_ORIGINS = [
-    'https://miyan.smartcareer.ir',
-    'https://www.miyan.smartcareer.ir',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-]
+CSRF_TRUSTED_ORIGINS = get_list_from_env(
+    'DJANGO_CSRF_TRUSTED_ORIGINS',
+    [
+        'https://miyan.smartcareer.ir',
+        'https://www.miyan.smartcareer.ir',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+    ],
+)
 
 # Security settings - DIFFERENT FOR DEVELOPMENT vs PRODUCTION
 if DEBUG:

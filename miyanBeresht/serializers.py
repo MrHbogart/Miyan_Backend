@@ -1,5 +1,35 @@
+from decimal import Decimal, InvalidOperation
+
 from rest_framework import serializers
 from .models import BereshtMenu, BereshtMenuSection, BereshtMenuItem
+
+
+def format_decimal_string(value: Decimal) -> str:
+    as_string = format(value, 'f')
+    if '.' in as_string:
+        as_string = as_string.rstrip('0').rstrip('.')
+    return as_string
+
+
+def format_price_display(value, fallback, lang: str) -> str:
+    fallback = fallback or ''
+    if value in (None, ''):
+        return fallback
+    try:
+        decimal_value = Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        return fallback or str(value)
+
+    thousands = decimal_value / Decimal('1000')
+
+    if lang == 'fa':
+        if thousands == thousands.to_integral_value():
+            return str(int(thousands))
+        return format_decimal_string(thousands)
+
+    formatted = format_decimal_string(thousands)
+    return f"IRR {formatted}"
+
 
 class BereshtMenuItemSerializer(serializers.ModelSerializer):
     class Meta:
@@ -58,8 +88,8 @@ class BereshtMenuSerializer(serializers.ModelSerializer):
                     'en': item.get('description_en') or ''
                 },
                 'price': {
-                    'fa': item.get('price_fa') or (str(price_val) if price_val is not None else ''),
-                    'en': item.get('price_en') or (str(price_val) if price_val is not None else '')
+                    'fa': format_price_display(price_val, item.get('price_fa'), 'fa'),
+                    'en': format_price_display(price_val, item.get('price_en'), 'en')
                 },
                 'image': image
             }

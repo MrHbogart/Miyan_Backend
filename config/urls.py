@@ -1,5 +1,7 @@
 from django.urls import path, include
 from django.contrib import admin
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -7,4 +9,4 @@ urlpatterns = [
     path('api/beresht/', include('miyanBeresht.urls')),
     path('api/madi/', include('miyanMadi.urls')),
     path('api/group/', include('miyanGroup.urls')),
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
