@@ -187,9 +187,9 @@ SESSION_SAVE_EVERY_REQUEST = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
 # Authentication
-LOGIN_URL = '/api/admin/login/'
-LOGIN_REDIRECT_URL = '/api/admin/'
-LOGOUT_REDIRECT_URL = '/api/admin/login/'
+LOGIN_URL = '/admin/login/'
+LOGIN_REDIRECT_URL = '/admin/'
+LOGOUT_REDIRECT_URL = '/admin/login/'
 
 # Logging
 LOGGING = {
