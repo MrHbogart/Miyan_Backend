@@ -1,5 +1,7 @@
 import os
 from pathlib import Path
+
+import dj_database_url
 from dotenv import load_dotenv
 
 # Load environment variables from .env
@@ -15,13 +17,24 @@ def get_list_from_env(var_name, default):
     return [item.strip() for item in raw_value.split(',') if item.strip()]
 
 
+def env_bool(var_name, default=False):
+    raw_value = os.getenv(var_name)
+    if raw_value is None:
+        return default
+    return raw_value.lower() in {'1', 'true', 'yes', 'on'}
+
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'insecure-default-key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DJANGO_DEBUG', 'False').lower() == 'true'
+DEBUG = env_bool('DJANGO_DEBUG', False)
+ALLOWED_HOSTS = get_list_from_env(
+    'DJANGO_ALLOWED_HOSTS',
+    ['localhost', '127.0.0.1', 'miyangroup.com', '.miyangroup.com'],
+)
 
-ALLOWED_HOSTS = get_list_from_env('DJANGO_ALLOWED_HOSTS', ['localhost', '127.0.0.1'])
+LOG_LEVEL = os.getenv('DJANGO_LOG_LEVEL', 'INFO')
 
 # Application definition
 INSTALLED_APPS = [
@@ -30,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
@@ -41,8 +55,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -56,7 +71,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -72,24 +87,29 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database
-if DEBUG:
+DB_CONN_MAX_AGE = int(os.getenv('DB_CONN_MAX_AGE', '60'))
+DATABASE_URL = os.getenv('DATABASE_URL')
+
+default_db_config = {
+    'ENGINE': 'django.db.backends.postgresql',
+    'NAME': os.getenv('POSTGRES_DB', 'miyan_db'),
+    'USER': os.getenv('POSTGRES_USER', 'miyan_user'),
+    'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'miyan_password'),
+    'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
+    'PORT': os.getenv('POSTGRES_PORT', '5432'),
+    'CONN_MAX_AGE': DB_CONN_MAX_AGE,
+}
+
+if DATABASE_URL:
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
+        'default': dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=DB_CONN_MAX_AGE,
+            ssl_require=env_bool('DB_SSL_REQUIRE', False),
+        )
     }
 else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('POSTGRES_DB', 'miyan_db'),
-            'USER': os.getenv('POSTGRES_USER', 'miyan_user'),
-            'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'miyan_password'),
-            'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
-            'PORT': os.getenv('POSTGRES_PORT', '5432'),
-        }
-    }
+    DATABASES = {'default': default_db_config}
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -120,6 +140,17 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+        if not DEBUG
+        else 'django.contrib.staticfiles.storage.StaticFilesStorage',
+    },
+}
+
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -142,6 +173,9 @@ CORS_ALLOWED_ORIGINS = get_list_from_env(
     [
         'https://miyangroup.com',
         'https://www.miyangroup.com',
+        'https://app.miyangroup.com',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
     ],
 )
 
@@ -153,28 +187,28 @@ CSRF_TRUSTED_ORIGINS = get_list_from_env(
     [
         'https://miyangroup.com',
         'https://www.miyangroup.com',
+        'https://app.miyangroup.com',
+        'https://api.miyangroup.com',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
     ],
 )
 
-# Security settings - DIFFERENT FOR DEVELOPMENT vs PRODUCTION
-if DEBUG:
-    # Development settings (less secure)
-    SECURE_SSL_REDIRECT = False
-    SESSION_COOKIE_SECURE = False
-    CSRF_COOKIE_SECURE = False
-    CSRF_COOKIE_SAMESITE = 'Lax'
-    SESSION_COOKIE_SAMESITE = 'Lax'
-    SECURE_PROXY_SSL_HEADER = None
-    USE_X_FORWARDED_HOST = False
-else:
-    # Production settings (secure)
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    CSRF_COOKIE_SAMESITE = 'None'
-    SESSION_COOKIE_SAMESITE = 'None'
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    USE_X_FORWARDED_HOST = True
+# Security settings
+SECURE_SSL_REDIRECT = env_bool('DJANGO_SECURE_SSL_REDIRECT', not DEBUG)
+SESSION_COOKIE_SECURE = env_bool('DJANGO_SESSION_COOKIE_SECURE', not DEBUG)
+CSRF_COOKIE_SECURE = env_bool('DJANGO_CSRF_COOKIE_SECURE', not DEBUG)
+CSRF_COOKIE_SAMESITE = 'None' if CSRF_COOKIE_SECURE else 'Lax'
+SESSION_COOKIE_SAMESITE = 'None' if SESSION_COOKIE_SECURE else 'Lax'
+SECURE_HSTS_SECONDS = int(os.getenv('DJANGO_SECURE_HSTS_SECONDS', '31536000' if not DEBUG else '0'))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool('DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS', not DEBUG)
+SECURE_HSTS_PRELOAD = env_bool('DJANGO_SECURE_HSTS_PRELOAD', not DEBUG)
+TRUST_PROXY_HEADERS = env_bool('DJANGO_TRUST_PROXY_HEADERS', not DEBUG)
+USE_X_FORWARDED_HOST = env_bool('DJANGO_USE_X_FORWARDED_HOST', TRUST_PROXY_HEADERS)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') if TRUST_PROXY_HEADERS else None
+
+if not SECURE_SSL_REDIRECT:
+    SECURE_HSTS_SECONDS = 0
 
 # Additional security settings
 SECURE_BROWSER_XSS_FILTER = True
@@ -202,12 +236,12 @@ LOGGING = {
     },
     'root': {
         'handlers': ['console'],
-        'level': 'INFO',
+        'level': LOG_LEVEL,
     },
     'loggers': {
         'django': {
             'handlers': ['console'],
-            'level': 'INFO',
+            'level': LOG_LEVEL,
             'propagate': False,
         },
     },

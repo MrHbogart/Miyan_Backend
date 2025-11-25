@@ -1,43 +1,73 @@
 # Mian Backend (Django + DRF)
 
-This repository contains a Django REST Framework backend scaffolded for the Mian app. It uses SQLite for development and is prepared to be migrated to PostgreSQL later.
+This repository contains the Django REST API for the Miyan platform. The service now runs **only on PostgreSQL** whether you are in development or production, and all sensitive settings come from `.env` files so they can be shared between Docker, virtualenvs, and any CI pipelines.
 
-Quick start (macOS / zsh):
+## Quick start (local development)
 
-0. Configure environment variables (copy the example file and tweak as needed):
+1. Copy the provided defaults and edit secrets/domains to match your environment:
+
+   ```bash
+   cd Miyan_Backend
+   cp .env.example .env
+   # update DJANGO_SECRET_KEY, database credentials, etc.
+   ```
+
+   The example file already whitelists `miyangroup.com` and `www.miyangroup.com` alongside localhost origins so it can be used for nginx on the production domains.
+
+2. (Optional) create a virtual environment and install the dependencies:
+
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   ```
+
+3. Provision PostgreSQL (either via Docker, Homebrew, etc.) and ensure the credentials in `.env` match. Then run the standard Django workflow:
+
+   ```bash
+   python manage.py migrate
+   python manage.py runserver 0.0.0.0:8000
+   ```
+
+   The admin UI is reachable at `http://127.0.0.1:8000/admin/` once you create a superuser (`python manage.py createsuperuser`).
+
+## Docker deployment
+
+A production-focused Docker stack now ships with the repository:
 
 ```bash
-cp .env.example .env
-# edit DJANGO_SECRET_KEY, allowed hosts, etc.
+docker compose up --build -d
 ```
 
-`DJANGO_DEBUG=True` (default in the example) keeps everything running locally with SQLite and HTTP.  
-Setting `DJANGO_DEBUG=False` switches the app to PostgreSQL credentials from `.env` and enforces HTTPS-secure cookies for deployment behind gunicorn/nginx.
+- `backend` — builds the Django/Gunicorn image, waits for Postgres, runs migrations, collects static files, and finally serves on port `8002` (so nginx can proxy `/api/`).
+- `db` — PostgreSQL 15 with persistent volume storage.
 
-1. Create/activate virtualenv (already created in this workspace as `.venv`):
+Important commands:
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+# Run one-off Django management commands
+docker compose run --rm backend python manage.py shell
+
+# Create new migrations from model changes
+docker compose run --rm backend python manage.py makemigrations
+
+# Apply migrations manually (entrypoint already runs this on startup)
+docker compose run --rm backend python manage.py migrate
 ```
 
-2. Run migrations and start development server:
+Static files live in the `static_volume` named volume and uploaded media in `media_volume`. Mount them to host paths if you want to back them up externally.
 
-```bash
-.venv/bin/python manage.py migrate
-.venv/bin/python manage.py runserver
-```
+## Environment variables
 
-3. Admin access:
+Key settings supported by the backend:
 
-- URL: http://127.0.0.1:8000/admin/
-- A default superuser `admin` with password `adminpass` was created by the setup script in this session. Change the password after first login.
+| Variable | Description |
+| --- | --- |
+| `DJANGO_SECRET_KEY` | Required cryptographic secret. |
+| `DJANGO_ALLOWED_HOSTS` | Comma-separated hosts (already defaults to `miyangroup.com` variants). |
+| `DJANGO_CORS_ALLOWED_ORIGINS` / `DJANGO_CSRF_TRUSTED_ORIGINS` | Origins for SSR frontend + nginx (`https://miyangroup.com`). |
+| `DATABASE_URL` | Preferred way to point Django at PostgreSQL (`postgres://user:pass@db:5432/name`). |
+| `POSTGRES_*` | Used when `DATABASE_URL` is not provided (handy inside docker-compose). |
+| `DJANGO_SECURE_SSL_REDIRECT`, `DJANGO_TRUST_PROXY_HEADERS` | Toggle SSL + proxy aware headers for nginx/Certbot deployments. |
 
-API endpoints are exposed under `/api/` (browsable API available). JWT token endpoints:
-
-- POST `/api/token/`  — obtain access and refresh tokens
-- POST `/api/token/refresh/` — refresh access token
-
-Notes:
-- This is a development setup. Adjust `.env` before deploying (especially `DJANGO_ALLOWED_HOSTS`, `DJANGO_CORS_ALLOWED_ORIGINS`, Postgres credentials, etc.).
+Anything set in `.env` is automatically loaded by `config/settings.py`, so running with `DJANGO_DEBUG=False` locally or in Docker is safe—the admin panel still works because static files are served via WhiteNoise even in containerized mode.

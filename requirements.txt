@@ -3,6 +3,7 @@ Django==4.2.16
 django-cors-headers==4.9.0
 djangorestframework==3.16.1
 djangorestframework_simplejwt==5.5.1
+dj-database-url==2.1.0
 psycopg2-binary==2.9.11
 PyJWT==2.10.1
 setuptools==80.9.0
@@ -11,3 +12,4 @@ wheel==0.45.1
 python-dotenv
 gunicorn
 Pillow
+whitenoise==6.8.2
