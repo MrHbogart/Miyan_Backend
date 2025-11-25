@@ -140,12 +140,8 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = get_list_from_env(
     'DJANGO_CORS_ALLOWED_ORIGINS',
     [
-        'https://miyan.smartcareer.ir',
-        'https://www.miyan.smartcareer.ir',
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
-        'http://localhost:5173',
-        'http://127.0.0.1:5173',
+        'https://miyangroup.com',
+        'https://www.miyangroup.com',
     ],
 )
 
@@ -155,12 +151,8 @@ CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = get_list_from_env(
     'DJANGO_CSRF_TRUSTED_ORIGINS',
     [
-        'https://miyan.smartcareer.ir',
-        'https://www.miyan.smartcareer.ir',
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
-        'http://localhost:5173',
-        'http://127.0.0.1:5173',
+        'https://miyangroup.com',
+        'https://www.miyangroup.com',
     ],
 )
 
@@ -195,9 +187,9 @@ SESSION_SAVE_EVERY_REQUEST = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
 # Authentication
-LOGIN_URL = '/admin/login/'
-LOGIN_REDIRECT_URL = '/admin/'
-LOGOUT_REDIRECT_URL = '/admin/login/'
+LOGIN_URL = '/api/admin/login/'
+LOGIN_REDIRECT_URL = '/api/admin/'
+LOGOUT_REDIRECT_URL = '/api/admin/login/'
 
 # Logging
 LOGGING = {
