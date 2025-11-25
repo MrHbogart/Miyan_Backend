@@ -14,6 +14,22 @@ This repository contains the Django REST API for the Miyan platform. The service
 
    The example file already whitelists `miyangroup.com` and `www.miyangroup.com` alongside localhost origins so it can be used for nginx on the production domains.
 
+   To rotate credentials, rely on Django's built-in helpers so secrets are always production grade:
+
+   ```bash
+   # Requires Django dependencies (install locally or run inside the backend container)
+   python - <<'PY'
+   from django.core.management.utils import get_random_secret_key
+   print(get_random_secret_key())
+   PY
+
+   # Generate a strong database password (safe for .env files)
+   python - <<'PY'
+   import secrets
+   print(secrets.token_urlsafe(32))
+   PY
+   ```
+
 2. (Optional) create a virtual environment and install the dependencies:
 
    ```bash
@@ -26,7 +42,7 @@ This repository contains the Django REST API for the Miyan platform. The service
 
    ```bash
    python manage.py migrate
-   python manage.py runserver 0.0.0.0:8000
+   python manage.py runserver 0.0.0.0:8002
    ```
 
    The admin UI is reachable at `http://127.0.0.1:8000/admin/` once you create a superuser (`python manage.py createsuperuser`).

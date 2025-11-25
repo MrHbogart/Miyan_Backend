@@ -3,6 +3,7 @@ from pathlib import Path
 
 import dj_database_url
 from dotenv import load_dotenv
+from django.core.management.utils import get_random_secret_key
 
 # Load environment variables from .env
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,10 +26,17 @@ def env_bool(var_name, default=False):
 
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'insecure-default-key')
+raw_secret_key = os.getenv('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env_bool('DJANGO_DEBUG', False)
+
+if not raw_secret_key:
+    if not DEBUG:
+        raise RuntimeError('DJANGO_SECRET_KEY must be set when DEBUG is False.')
+    raw_secret_key = get_random_secret_key()
+
+SECRET_KEY = raw_secret_key
 ALLOWED_HOSTS = get_list_from_env(
     'DJANGO_ALLOWED_HOSTS',
     ['localhost', '127.0.0.1', 'miyangroup.com', '.miyangroup.com'],
