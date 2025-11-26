@@ -3,9 +3,10 @@ FROM python:3.11-slim AS builder
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    APP_HOME=/home/miyan/Miyan_Backend
 
-WORKDIR /app
+WORKDIR ${APP_HOME}
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -20,9 +21,10 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    APP_HOME=/home/miyan/Miyan_Backend
 
-WORKDIR /app
+WORKDIR ${APP_HOME}
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
@@ -35,7 +37,7 @@ RUN pip install --upgrade pip && pip install /wheels/* && rm -rf /wheels
 COPY . .
 RUN chmod +x scripts/docker-entrypoint.sh && \
     addgroup --system miyan && adduser --system --ingroup miyan miyan && \
-    chown -R miyan:miyan /app
+    chown -R miyan:miyan ${APP_HOME}
 
 USER miyan
 

@@ -13,8 +13,8 @@ services:
       APP_COMMIT_SHA: ${APP_COMMIT_SHA:-dev}
       APP_VERSION: ${APP_VERSION:-dev}
     volumes:
-      - ./staticfiles:/app/staticfiles
-      - ./media:/app/media
+      - ./staticfiles:/home/miyan/Miyan_Backend/staticfiles
+      - ./media:/home/miyan/Miyan_Backend/media
     tmpfs:
       - /tmp
     read_only: true
