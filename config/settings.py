@@ -1,9 +1,13 @@
+import logging
 import os
 from pathlib import Path
 
 import dj_database_url
-from dotenv import load_dotenv
+import sentry_sdk
 from django.core.management.utils import get_random_secret_key
+from dotenv import load_dotenv
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
 
 # Load environment variables from .env
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,6 +29,16 @@ def env_bool(var_name, default=False):
     return raw_value.lower() in {'1', 'true', 'yes', 'on'}
 
 
+def env_float(var_name, default=0.0):
+    raw_value = os.getenv(var_name)
+    if raw_value is None:
+        return default
+    try:
+        return float(raw_value)
+    except ValueError:
+        return default
+
+
 # SECURITY WARNING: keep the secret key used in production secret!
 raw_secret_key = os.getenv('DJANGO_SECRET_KEY')
 
@@ -37,6 +51,9 @@ if not raw_secret_key:
     raw_secret_key = get_random_secret_key()
 
 SECRET_KEY = raw_secret_key
+
+APP_VERSION = os.getenv('APP_VERSION', 'dev')
+APP_COMMIT_SHA = os.getenv('APP_COMMIT_SHA', 'dev')
 ALLOWED_HOSTS = get_list_from_env(
     'DJANGO_ALLOWED_HOSTS',
     ['localhost', '127.0.0.1', 'miyangroup.com', '.miyangroup.com'],
@@ -173,6 +190,14 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 25,
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': os.getenv('DRF_ANON_THROTTLE_RATE', '100/hour'),
+        'user': os.getenv('DRF_USER_THROTTLE_RATE', '1000/hour'),
+    },
 }
 
 # CORS settings
@@ -206,7 +231,11 @@ CSRF_TRUSTED_ORIGINS = get_list_from_env(
 SECURE_SSL_REDIRECT = env_bool('DJANGO_SECURE_SSL_REDIRECT', not DEBUG)
 SESSION_COOKIE_SECURE = env_bool('DJANGO_SESSION_COOKIE_SECURE', not DEBUG)
 CSRF_COOKIE_SECURE = env_bool('DJANGO_CSRF_COOKIE_SECURE', not DEBUG)
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_NAME = os.getenv('DJANGO_CSRF_COOKIE_NAME', 'miyan_csrftoken')
 CSRF_COOKIE_SAMESITE = 'None' if CSRF_COOKIE_SECURE else 'Lax'
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_NAME = os.getenv('DJANGO_SESSION_COOKIE_NAME', 'miyan_sessionid')
 SESSION_COOKIE_SAMESITE = 'None' if SESSION_COOKIE_SECURE else 'Lax'
 SECURE_HSTS_SECONDS = int(os.getenv('DJANGO_SECURE_HSTS_SECONDS', '31536000' if not DEBUG else '0'))
 SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool('DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS', not DEBUG)
@@ -221,6 +250,10 @@ if not SECURE_SSL_REDIRECT:
 # Additional security settings
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
+SECURE_CROSS_ORIGIN_EMBEDDER_POLICY = 'require-corp'
+SECURE_CROSS_ORIGIN_RESOURCE_POLICY = 'same-origin'
 X_FRAME_OPTIONS = 'DENY'
 
 # Session settings
@@ -233,13 +266,40 @@ LOGIN_URL = '/admin/login/'
 LOGIN_REDIRECT_URL = '/admin/'
 LOGOUT_REDIRECT_URL = '/admin/login/'
 
+# Observability / error tracking
+SENTRY_DSN = os.getenv('SENTRY_DSN')
+SENTRY_ENVIRONMENT = os.getenv('SENTRY_ENVIRONMENT', 'production')
+SENTRY_TRACES_SAMPLE_RATE = env_float('SENTRY_TRACES_SAMPLE_RATE', 0.0)
+SENTRY_PROFILES_SAMPLE_RATE = env_float('SENTRY_PROFILES_SAMPLE_RATE', 0.0)
+
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        environment=SENTRY_ENVIRONMENT,
+        release=APP_VERSION,
+        integrations=[
+            DjangoIntegration(),
+            LoggingIntegration(level=logging.INFO, event_level=logging.ERROR),
+        ],
+        traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE,
+        profiles_sample_rate=SENTRY_PROFILES_SAMPLE_RATE,
+        send_default_pii=True,
+    )
+
 # Logging
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'json': {
+            '()': 'pythonjsonlogger.jsonlogger.JsonFormatter',
+            'fmt': '%(asctime)s %(levelname)s %(name)s %(message)s %(pathname)s %(lineno)s',
+        },
+    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
+            'formatter': 'json',
         },
     },
     'root': {
@@ -250,6 +310,11 @@ LOGGING = {
         'django': {
             'handlers': ['console'],
             'level': LOG_LEVEL,
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'ERROR',
             'propagate': False,
         },
     },

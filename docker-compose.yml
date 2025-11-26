@@ -4,16 +4,31 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    init: true
     env_file:
       - .env
     ports:
       - "8002:8002"
+    environment:
+      APP_COMMIT_SHA: ${APP_COMMIT_SHA:-dev}
+      APP_VERSION: ${APP_VERSION:-dev}
     volumes:
-      - static_volume:/app/staticfiles
-      - media_volume:/app/media
+      - ./staticfiles:/app/staticfiles
+      - ./media:/app/media
+    tmpfs:
+      - /tmp
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8002/api/core/health/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
 
   db:
@@ -39,5 +54,3 @@ services:
 
 volumes:
   postgres_data:
-  static_volume:
-  media_volume:
