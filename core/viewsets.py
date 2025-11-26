@@ -1,8 +1,10 @@
-"""Reusable DRF mixins to keep the API surface consistent."""
+"""Reusable DRF mixins and base viewsets for a consistent API surface."""
 
 from __future__ import annotations
 
-from rest_framework import permissions, status
+from django.db.models import QuerySet
+from rest_framework import permissions, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
 
 
@@ -20,6 +22,43 @@ class AdminWritePermissionMixin:
         else:
             permission_classes = [self.read_permission_class]
         return [permission() for permission in permission_classes]
+
+
+class PublicQuerysetMixin:
+    """Filter read-only actions to public records while keeping admin access."""
+
+    public_filter_field: str | None = None
+    public_filter_value: bool = True
+    staff_bypass_public_filter: bool = True
+
+    def is_write_action(self) -> bool:
+        return getattr(self, 'action', None) in getattr(
+            self, 'admin_write_actions', set()
+        )
+
+    def should_filter_public_queryset(self) -> bool:
+        if not self.public_filter_field:
+            return False
+        if self.is_write_action():
+            return False
+        if (
+            self.staff_bypass_public_filter
+            and getattr(self.request, 'user', None) is not None
+            and self.request.user.is_staff
+        ):
+            return False
+        return True
+
+    def filter_queryset_for_public(self, queryset: QuerySet) -> QuerySet:
+        if not self.should_filter_public_queryset():
+            return queryset
+        return queryset.filter(
+            **{self.public_filter_field: self.public_filter_value}
+        )
+
+    def get_queryset(self) -> QuerySet:
+        queryset = super().get_queryset()
+        return self.filter_queryset_for_public(queryset)
 
 
 class MenuTypeActionMixin:
@@ -53,3 +92,66 @@ class MenuTypeActionMixin:
         queryset = self._menu_queryset()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+
+class BaseMenuViewSet(
+    AdminWritePermissionMixin, PublicQuerysetMixin, MenuTypeActionMixin, viewsets.ModelViewSet
+):
+    """Shared behaviors for brand-specific menu viewsets."""
+
+    public_filter_field = 'is_active'
+    main_menu_not_found_message = 'No active menu found'
+    todays_not_found_message = "No today's special menu found"
+
+    @action(detail=False, methods=['get'])
+    def main(self, request):
+        """Public endpoint for the active main menu."""
+        return self.respond_with_menu_type(
+            'main',
+            fallback_first=True,
+            not_found_message=self.main_menu_not_found_message,
+        )
+
+    @action(detail=False, methods=['get'])
+    def today(self, request):
+        """Public endpoint for today's specials."""
+        return self.respond_with_menu_type(
+            'today',
+            not_found_message=self.todays_not_found_message,
+        )
+
+    @action(detail=False, methods=['get'])
+    def all(self, request):
+        """Return all active menus for the brand."""
+        return self.list_active_menus()
+
+
+class BaseMenuSectionViewSet(
+    AdminWritePermissionMixin, PublicQuerysetMixin, viewsets.ModelViewSet
+):
+    """Sections share the same read/write and active filtering semantics."""
+
+    public_filter_field = 'is_active'
+
+
+class BaseMenuItemViewSet(
+    AdminWritePermissionMixin, PublicQuerysetMixin, viewsets.ModelViewSet
+):
+    """Base class for menu items that exposes the common public actions."""
+
+    public_filter_field = 'is_available'
+
+    def _special_response(self, **filters):
+        queryset = self.filter_queryset(self.get_queryset().filter(**filters))
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def featured(self, request):
+        """Public endpoint for featured items."""
+        return self._special_response(is_featured=True)
+
+    @action(detail=False, methods=['get'])
+    def todays_specials(self, request):
+        """Public endpoint for today's specials."""
+        return self._special_response(is_todays_special=True)

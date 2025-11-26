@@ -46,6 +46,8 @@ DEBUG = env_bool('DJANGO_DEBUG', True)
 RUNNING_TESTS = env_bool('DJANGO_TEST', False) or os.getenv('PYTEST_CURRENT_TEST') is not None
 raw_secret_key = os.getenv('DJANGO_SECRET_KEY')
 if not raw_secret_key:
+    if not DEBUG:
+        raise RuntimeError('DJANGO_SECRET_KEY must be set when DEBUG is False.')
     raw_secret_key = get_random_secret_key()
 SECRET_KEY = raw_secret_key
 

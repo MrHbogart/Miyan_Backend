@@ -112,12 +112,12 @@ Static files live in the `static_volume` named volume and uploaded media in `med
 
 ### Settings profiles
 
-Two Django settings modules live in `config/`:
-
-- `settings.py` — default for local development. It enables `DEBUG`, falls back to SQLite if Postgres variables are absent, and keeps all other middleware/apps identical to production.
-- `settings.production.py` — hardened production configuration (PostgreSQL, strict security rules, required secret key). After pulling the repo on the server, replace `config/settings.py` with this file (`mv config/settings.production.py config/settings.py`) before running Docker Compose or any Django commands.
-
-Alternatively, you can point `DJANGO_SETTINGS_MODULE` to `config.settings.production` instead of renaming files if that better suits your workflows.
+The project now relies on a single settings module (`config/settings.py`) for every
+environment—flip the behavior using environment variables (`DJANGO_DEBUG`, `DATABASE_URL`,
+etc.). `config/settings.production` remains only as a backwards-compatible shim so existing
+deployments that import `config.settings.production` continue to work; it simply forces
+`DJANGO_DEBUG=0` and reuses the main settings module. There is no longer a need to copy files
+before running Docker Compose.
 
 ## Environment variables
 
