@@ -38,7 +38,12 @@ This repository contains the Django REST API for the Miyan platform. The service
    pip install -r requirements-dev.txt  # or run `make install-dev`
    ```
 
-3. Provision PostgreSQL (either via Docker, Homebrew, etc.) and ensure the credentials in `.env` match. Then run the standard Django workflow:
+3. Decide which database to use locally:
+
+   - **SQLite (default):** remove/comment the `DATABASE_URL` and `POSTGRES_*` lines from `.env`. The local settings automatically fall back to `db.sqlite3`.
+   - **PostgreSQL:** leave the default values or point them at your local Postgres instance.
+
+4. Run the standard Django workflow:
 
    ```bash
    python manage.py migrate
@@ -47,7 +52,7 @@ This repository contains the Django REST API for the Miyan platform. The service
 
    The admin UI is reachable at `http://127.0.0.1:8002/admin/` once you create a superuser (`python manage.py createsuperuser`).
 
-4. Run linting/tests locally to match CI:
+5. Run linting/tests locally to match CI:
 
    ```bash
    make lint
@@ -104,6 +109,15 @@ Static files live in the `static_volume` named volume and uploaded media in `med
 - `.github/workflows/ci.yml` now also contains a `deploy` job that runs on a self-hosted runner labelled `self-hosted, linux, production` whenever changes hit `main`.
 - The deploy job stops the existing stack, rebuilds the Docker services, and restarts them with the current `APP_VERSION` and `APP_COMMIT_SHA`.
 - Follow `todo.md` for the exact runner installation steps and any remaining manual tasks required to finish the pipeline.
+
+### Settings profiles
+
+Two Django settings modules live in `config/`:
+
+- `settings.py` — default for local development. It enables `DEBUG`, falls back to SQLite if Postgres variables are absent, and keeps all other middleware/apps identical to production.
+- `settings.production.py` — hardened production configuration (PostgreSQL, strict security rules, required secret key). After pulling the repo on the server, replace `config/settings.py` with this file (`mv config/settings.production.py config/settings.py`) before running Docker Compose or any Django commands.
+
+Alternatively, you can point `DJANGO_SETTINGS_MODULE` to `config.settings.production` instead of renaming files if that better suits your workflows.
 
 ## Environment variables
 

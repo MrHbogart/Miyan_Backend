@@ -13,7 +13,6 @@ from sentry_sdk.integrations.logging import LoggingIntegration
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
 
-
 # Utility helpers -----------------------------------------------------------
 def get_list_from_env(var_name, default):
     """Split comma separated env vars into a clean list."""
@@ -40,22 +39,29 @@ def env_float(var_name, default=0.0):
         return default
 
 
-# Local/development defaults ------------------------------------------------
-DEBUG = env_bool('DJANGO_DEBUG', True)
+# SECURITY WARNING: keep the secret key used in production secret!
 raw_secret_key = os.getenv('DJANGO_SECRET_KEY')
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = env_bool('DJANGO_DEBUG', False)
+
 if not raw_secret_key:
+    if not DEBUG:
+        raise RuntimeError('DJANGO_SECRET_KEY must be set when DEBUG is False.')
     raw_secret_key = get_random_secret_key()
+
 SECRET_KEY = raw_secret_key
 
 APP_VERSION = os.getenv('APP_VERSION', 'dev')
 APP_COMMIT_SHA = os.getenv('APP_COMMIT_SHA', 'dev')
 ALLOWED_HOSTS = get_list_from_env(
-    'DJANGO_ALLOWED_HOSTS', ['localhost', '127.0.0.1']
+    'DJANGO_ALLOWED_HOSTS',
+    ['localhost', '127.0.0.1', 'miyangroup.com', '.miyangroup.com'],
 )
 
-LOG_LEVEL = os.getenv('DJANGO_LOG_LEVEL', 'DEBUG')
+LOG_LEVEL = os.getenv('DJANGO_LOG_LEVEL', 'INFO')
 
-# Application definition ----------------------------------------------------
+# Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -105,14 +111,19 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# Database ------------------------------------------------------------------
-DB_CONN_MAX_AGE = int(os.getenv('DB_CONN_MAX_AGE', '0'))
+# Database
+DB_CONN_MAX_AGE = int(os.getenv('DB_CONN_MAX_AGE', '60'))
 DATABASE_URL = os.getenv('DATABASE_URL')
-POSTGRES_DB = os.getenv('POSTGRES_DB')
-POSTGRES_USER = os.getenv('POSTGRES_USER')
-POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD')
-POSTGRES_HOST = os.getenv('POSTGRES_HOST', 'localhost')
-POSTGRES_PORT = os.getenv('POSTGRES_PORT', '5432')
+
+default_db_config = {
+    'ENGINE': 'django.db.backends.postgresql',
+    'NAME': os.getenv('POSTGRES_DB', 'miyan_db'),
+    'USER': os.getenv('POSTGRES_USER', 'miyan_user'),
+    'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'miyan_password'),
+    'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
+    'PORT': os.getenv('POSTGRES_PORT', '5432'),
+    'CONN_MAX_AGE': DB_CONN_MAX_AGE,
+}
 
 if DATABASE_URL:
     DATABASES = {
@@ -122,27 +133,10 @@ if DATABASE_URL:
             ssl_require=env_bool('DB_SSL_REQUIRE', False),
         )
     }
-elif POSTGRES_DB or POSTGRES_USER or POSTGRES_PASSWORD:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': POSTGRES_DB or 'miyan_db',
-            'USER': POSTGRES_USER or 'miyan_user',
-            'PASSWORD': POSTGRES_PASSWORD or 'miyan_password',
-            'HOST': POSTGRES_HOST,
-            'PORT': POSTGRES_PORT,
-            'CONN_MAX_AGE': DB_CONN_MAX_AGE,
-        }
-    }
 else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+    DATABASES = {'default': default_db_config}
 
-# Password validation -------------------------------------------------------
+# Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -158,13 +152,13 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# Internationalization ------------------------------------------------------
+# Internationalization
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static & media ------------------------------------------------------------
+# Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
@@ -182,10 +176,10 @@ STORAGES = {
     },
 }
 
-# Default primary key field type --------------------------------------------
+# Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Django REST Framework -----------------------------------------------------
+# Django REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
@@ -206,34 +200,34 @@ REST_FRAMEWORK = {
     },
 }
 
-# CORS settings -------------------------------------------------------------
+# CORS settings
 CORS_ALLOWED_ORIGINS = get_list_from_env(
     'DJANGO_CORS_ALLOWED_ORIGINS',
     [
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
         'https://miyangroup.com',
         'https://www.miyangroup.com',
         'https://app.miyangroup.com',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
     ],
 )
 
 CORS_ALLOW_CREDENTIALS = True
 
-# CSRF settings -------------------------------------------------------------
+# CSRF settings
 CSRF_TRUSTED_ORIGINS = get_list_from_env(
     'DJANGO_CSRF_TRUSTED_ORIGINS',
     [
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
         'https://miyangroup.com',
         'https://www.miyangroup.com',
         'https://app.miyangroup.com',
         'https://api.miyangroup.com',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
     ],
 )
 
-# Security settings ---------------------------------------------------------
+# Security settings
 SECURE_SSL_REDIRECT = env_bool('DJANGO_SECURE_SSL_REDIRECT', not DEBUG)
 SESSION_COOKIE_SECURE = env_bool('DJANGO_SESSION_COOKIE_SECURE', not DEBUG)
 CSRF_COOKIE_SECURE = env_bool('DJANGO_CSRF_COOKIE_SECURE', not DEBUG)
@@ -243,23 +237,17 @@ CSRF_COOKIE_SAMESITE = 'None' if CSRF_COOKIE_SECURE else 'Lax'
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_NAME = os.getenv('DJANGO_SESSION_COOKIE_NAME', 'miyan_sessionid')
 SESSION_COOKIE_SAMESITE = 'None' if SESSION_COOKIE_SECURE else 'Lax'
-SECURE_HSTS_SECONDS = int(
-    os.getenv('DJANGO_SECURE_HSTS_SECONDS', '31536000' if not DEBUG else '0')
-)
-SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool(
-    'DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS', not DEBUG
-)
+SECURE_HSTS_SECONDS = int(os.getenv('DJANGO_SECURE_HSTS_SECONDS', '31536000' if not DEBUG else '0'))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool('DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS', not DEBUG)
 SECURE_HSTS_PRELOAD = env_bool('DJANGO_SECURE_HSTS_PRELOAD', not DEBUG)
 TRUST_PROXY_HEADERS = env_bool('DJANGO_TRUST_PROXY_HEADERS', not DEBUG)
 USE_X_FORWARDED_HOST = env_bool('DJANGO_USE_X_FORWARDED_HOST', TRUST_PROXY_HEADERS)
-SECURE_PROXY_SSL_HEADER = (
-    ('HTTP_X_FORWARDED_PROTO', 'https') if TRUST_PROXY_HEADERS else None
-)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') if TRUST_PROXY_HEADERS else None
 
 if not SECURE_SSL_REDIRECT:
     SECURE_HSTS_SECONDS = 0
 
-# Additional security settings ----------------------------------------------
+# Additional security settings
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
@@ -268,19 +256,19 @@ SECURE_CROSS_ORIGIN_EMBEDDER_POLICY = 'require-corp'
 SECURE_CROSS_ORIGIN_RESOURCE_POLICY = 'same-origin'
 X_FRAME_OPTIONS = 'DENY'
 
-# Session settings ----------------------------------------------------------
+# Session settings
 SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
-# Authentication ------------------------------------------------------------
+# Authentication
 LOGIN_URL = '/admin/login/'
 LOGIN_REDIRECT_URL = '/admin/'
 LOGOUT_REDIRECT_URL = '/admin/login/'
 
-# Observability / error tracking --------------------------------------------
+# Observability / error tracking
 SENTRY_DSN = os.getenv('SENTRY_DSN')
-SENTRY_ENVIRONMENT = os.getenv('SENTRY_ENVIRONMENT', 'development')
+SENTRY_ENVIRONMENT = os.getenv('SENTRY_ENVIRONMENT', 'production')
 SENTRY_TRACES_SAMPLE_RATE = env_float('SENTRY_TRACES_SAMPLE_RATE', 0.0)
 SENTRY_PROFILES_SAMPLE_RATE = env_float('SENTRY_PROFILES_SAMPLE_RATE', 0.0)
 
@@ -298,7 +286,7 @@ if SENTRY_DSN:
         send_default_pii=True,
     )
 
-# Logging -------------------------------------------------------------------
+# Logging
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
