@@ -9,9 +9,10 @@ from dotenv import load_dotenv
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 
-# Load environment variables from .env
+# Load environment variables from .env unless explicitly skipped
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / '.env')
+if os.getenv('DJANGO_SKIP_DOTENV', '').lower() not in {'1', 'true', 'yes'}:
+    load_dotenv(BASE_DIR / '.env')
 
 
 # Utility helpers -----------------------------------------------------------
@@ -42,6 +43,7 @@ def env_float(var_name, default=0.0):
 
 # Local/development defaults ------------------------------------------------
 DEBUG = env_bool('DJANGO_DEBUG', True)
+RUNNING_TESTS = env_bool('DJANGO_TEST', False) or os.getenv('PYTEST_CURRENT_TEST') is not None
 raw_secret_key = os.getenv('DJANGO_SECRET_KEY')
 if not raw_secret_key:
     raw_secret_key = get_random_secret_key()
@@ -114,7 +116,14 @@ POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD')
 POSTGRES_HOST = os.getenv('POSTGRES_HOST', 'localhost')
 POSTGRES_PORT = os.getenv('POSTGRES_PORT', '5432')
 
-if DATABASE_URL:
+if RUNNING_TESTS:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'test_db.sqlite3',
+        }
+    }
+elif DATABASE_URL:
     DATABASES = {
         'default': dj_database_url.parse(
             DATABASE_URL,

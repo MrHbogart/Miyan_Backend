@@ -1,6 +1,8 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
+from core.viewsets import AdminWritePermissionMixin, MenuTypeActionMixin
 from .models import MadiMenu, MadiMenuSection, MadiMenuItem
 from .serializers import (
     MadiMenuSerializer, 
@@ -8,7 +10,9 @@ from .serializers import (
     MadiMenuItemSerializer
 )
 
-class MadiMenuViewSet(viewsets.ModelViewSet):
+class MadiMenuViewSet(
+    AdminWritePermissionMixin, MenuTypeActionMixin, viewsets.ModelViewSet
+):
     """
     API endpoint for Madi menus
     - GET: Available to all users
@@ -18,88 +22,47 @@ class MadiMenuViewSet(viewsets.ModelViewSet):
         'sections__items'
     )
     serializer_class = MadiMenuSerializer
-    
-    def get_permissions(self):
-        """
-        Instantiates and returns the list of permissions that this view requires.
-        """
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            permission_classes = [permissions.IsAdminUser]
-        else:
-            permission_classes = [permissions.AllowAny]
-        return [permission() for permission in permission_classes]
-    
     @action(detail=False, methods=['get'])
     def main(self, request):
         """Get the main active menu (public endpoint)"""
-        main_menu = self.queryset.filter(menu_type='main').first()
-        if not main_menu:
-            # If no main menu found, return the first active menu
-            main_menu = self.queryset.first()
-        
-        if not main_menu:
-            return Response({'detail': 'No active menu found'}, status=404)
-            
-        serializer = self.get_serializer(main_menu)
-        return Response(serializer.data)
+        return self.respond_with_menu_type(
+            'main', fallback_first=True, not_found_message='No active menu found'
+        )
     
     @action(detail=False, methods=['get'])
     def today(self, request):
         """Get today's special menu (public endpoint)"""
-        today_menu = self.queryset.filter(menu_type='today').first()
-        if not today_menu:
-            return Response({'detail': 'No today\'s special menu found'}, status=404)
-            
-        serializer = self.get_serializer(today_menu)
-        return Response(serializer.data)
+        return self.respond_with_menu_type(
+            'today', not_found_message="No today's special menu found"
+        )
     
     @action(detail=False, methods=['get'])
     def breakfast(self, request):
         """Get breakfast menu (public endpoint)"""
-        breakfast_menu = self.queryset.filter(menu_type='breakfast').first()
-        if not breakfast_menu:
-            return Response({'detail': 'No breakfast menu found'}, status=404)
-            
-        serializer = self.get_serializer(breakfast_menu)
-        return Response(serializer.data)
+        return self.respond_with_menu_type(
+            'breakfast', not_found_message='No breakfast menu found'
+        )
     
     @action(detail=False, methods=['get'])
     def all(self, request):
         """Get all active menus (public endpoint)"""
-        menus = self.queryset
-        serializer = self.get_serializer(menus, many=True)
-        return Response(serializer.data)
+        return self.list_active_menus()
 
 
-class MadiMenuSectionViewSet(viewsets.ModelViewSet):
+class MadiMenuSectionViewSet(AdminWritePermissionMixin, viewsets.ModelViewSet):
     """
     API endpoint for Madi menu sections (Admin only for write operations)
     """
     queryset = MadiMenuSection.objects.filter(is_active=True).prefetch_related('items')
     serializer_class = MadiMenuSectionSerializer
-    
-    def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            permission_classes = [permissions.IsAdminUser]
-        else:
-            permission_classes = [permissions.AllowAny]
-        return [permission() for permission in permission_classes]
 
 
-class MadiMenuItemViewSet(viewsets.ModelViewSet):
+class MadiMenuItemViewSet(AdminWritePermissionMixin, viewsets.ModelViewSet):
     """
     API endpoint for Madi menu items (Admin only for write operations)
     """
     queryset = MadiMenuItem.objects.filter(is_available=True)
     serializer_class = MadiMenuItemSerializer
-    
-    def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            permission_classes = [permissions.IsAdminUser]
-        else:
-            permission_classes = [permissions.AllowAny]
-        return [permission() for permission in permission_classes]
-    
     @action(detail=False, methods=['get'])
     def featured(self, request):
         """Get featured menu items (public endpoint)"""

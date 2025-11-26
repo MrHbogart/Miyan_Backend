@@ -1,7 +1,9 @@
 # miyanBeresht/views.py
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
+from core.viewsets import AdminWritePermissionMixin, MenuTypeActionMixin
 from .models import BereshtMenu, BereshtMenuSection, BereshtMenuItem
 from .serializers import (
     BereshtMenuSerializer, 
@@ -9,7 +11,9 @@ from .serializers import (
     BereshtMenuItemSerializer
 )
 
-class BereshtMenuViewSet(viewsets.ModelViewSet):
+class BereshtMenuViewSet(
+    AdminWritePermissionMixin, MenuTypeActionMixin, viewsets.ModelViewSet
+):
     """
     API endpoint for Beresht menus
     - GET: Available to all users
@@ -20,76 +24,40 @@ class BereshtMenuViewSet(viewsets.ModelViewSet):
     )
     serializer_class = BereshtMenuSerializer
     
-    def get_permissions(self):
-        """
-        Instantiates and returns the list of permissions that this view requires.
-        """
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            permission_classes = [permissions.IsAdminUser]
-        else:
-            permission_classes = [permissions.AllowAny]
-        return [permission() for permission in permission_classes]
-    
     @action(detail=False, methods=['get'])
     def main(self, request):
         """Get the main active menu (public endpoint)"""
-        main_menu = self.queryset.filter(menu_type='main').first()
-        if not main_menu:
-            # If no main menu found, return the first active menu
-            main_menu = self.queryset.first()
-        
-        if not main_menu:
-            return Response({'detail': 'No active menu found'}, status=404)
-            
-        serializer = self.get_serializer(main_menu)
-        return Response(serializer.data)
+        return self.respond_with_menu_type(
+            'main', fallback_first=True, not_found_message='No active menu found'
+        )
     
     @action(detail=False, methods=['get'])
     def today(self, request):
         """Get today's special menu (public endpoint)"""
-        today_menu = self.queryset.filter(menu_type='today').first()
-        if not today_menu:
-            return Response({'detail': 'No today\'s special menu found'}, status=404)
-            
-        serializer = self.get_serializer(today_menu)
-        return Response(serializer.data)
+        return self.respond_with_menu_type(
+            'today', not_found_message="No today's special menu found"
+        )
     
     @action(detail=False, methods=['get'])
     def all(self, request):
         """Get all active menus (public endpoint)"""
-        menus = self.queryset
-        serializer = self.get_serializer(menus, many=True)
-        return Response(serializer.data)
+        return self.list_active_menus()
 
 
-class BereshtMenuSectionViewSet(viewsets.ModelViewSet):
+class BereshtMenuSectionViewSet(AdminWritePermissionMixin, viewsets.ModelViewSet):
     """
     API endpoint for Beresht menu sections (Admin only for write operations)
     """
     queryset = BereshtMenuSection.objects.filter(is_active=True).prefetch_related('items')
     serializer_class = BereshtMenuSectionSerializer
-    
-    def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            permission_classes = [permissions.IsAdminUser]
-        else:
-            permission_classes = [permissions.AllowAny]
-        return [permission() for permission in permission_classes]
 
 
-class BereshtMenuItemViewSet(viewsets.ModelViewSet):
+class BereshtMenuItemViewSet(AdminWritePermissionMixin, viewsets.ModelViewSet):
     """
     API endpoint for Beresht menu items (Admin only for write operations)
     """
     queryset = BereshtMenuItem.objects.filter(is_available=True)
     serializer_class = BereshtMenuItemSerializer
-    
-    def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            permission_classes = [permissions.IsAdminUser]
-        else:
-            permission_classes = [permissions.AllowAny]
-        return [permission() for permission in permission_classes]
     
     @action(detail=False, methods=['get'])
     def featured(self, request):

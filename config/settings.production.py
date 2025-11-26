@@ -9,9 +9,10 @@ from dotenv import load_dotenv
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 
-# Load environment variables from .env
+# Load environment variables from .env unless explicitly skipped
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / '.env')
+if os.getenv('DJANGO_SKIP_DOTENV', '').lower() not in {'1', 'true', 'yes'}:
+    load_dotenv(BASE_DIR / '.env')
 
 # Utility helpers -----------------------------------------------------------
 def get_list_from_env(var_name, default):
