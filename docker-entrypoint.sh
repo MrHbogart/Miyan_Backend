@@ -5,6 +5,7 @@ set -euo pipefail
 python manage.py collectstatic --clear --noinput
 python - <<'PY'
 from pathlib import Path
+import os
 import shutil
 
 from django.conf import settings
@@ -12,6 +13,12 @@ from django.conf import settings
 static_root = Path(settings.STATIC_ROOT)
 static_root.mkdir(parents=True, exist_ok=True)
 Path(static_root, '.static_collected').write_text('collected')
+
+def set_permissions(root: Path) -> None:
+    for current, dirs, files in os.walk(root):
+        os.chmod(current, 0o755)
+        for name in files:
+            os.chmod(Path(current) / name, 0o644)
 
 def copy_static(target: Path) -> None:
     if target.exists():
@@ -21,6 +28,9 @@ def copy_static(target: Path) -> None:
             shutil.rmtree(target)
     target.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(static_root, target)
+    set_permissions(target)
+
+set_permissions(static_root)
 
 copy_static(Path(settings.BASE_DIR) / 'static')
 copy_static(Path(settings.BASE_DIR) / 'public' / 'static')
