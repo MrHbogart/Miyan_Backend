@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import logging
+
 from django.db.models import QuerySet
+from django.db.utils import ProgrammingError
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
+logger = logging.getLogger(__name__)
 
 
 class AdminWritePermissionMixin:
@@ -61,6 +66,17 @@ class PublicQuerysetMixin:
         return self.filter_queryset_for_public(queryset)
 
 
+class SafeQuerysetMixin:
+    """Wrap database access so missing tables don't crash the API."""
+
+    def get_queryset(self) -> QuerySet:
+        try:
+            return super().get_queryset()
+        except ProgrammingError:
+            logger.warning('Missing database table while resolving %s', self.__class__.__name__, exc_info=True)
+            return self.queryset.none()
+
+
 class MenuTypeActionMixin:
     """Helper utilities for menu viewsets that expose custom endpoints."""
 
@@ -95,7 +111,11 @@ class MenuTypeActionMixin:
 
 
 class BaseMenuViewSet(
-    AdminWritePermissionMixin, PublicQuerysetMixin, MenuTypeActionMixin, viewsets.ModelViewSet
+    AdminWritePermissionMixin,
+    SafeQuerysetMixin,
+    PublicQuerysetMixin,
+    MenuTypeActionMixin,
+    viewsets.ModelViewSet,
 ):
     """Shared behaviors for brand-specific menu viewsets."""
 
@@ -127,7 +147,10 @@ class BaseMenuViewSet(
 
 
 class BaseMenuSectionViewSet(
-    AdminWritePermissionMixin, PublicQuerysetMixin, viewsets.ModelViewSet
+    AdminWritePermissionMixin,
+    SafeQuerysetMixin,
+    PublicQuerysetMixin,
+    viewsets.ModelViewSet,
 ):
     """Sections share the same read/write and active filtering semantics."""
 
@@ -135,7 +158,10 @@ class BaseMenuSectionViewSet(
 
 
 class BaseMenuItemViewSet(
-    AdminWritePermissionMixin, PublicQuerysetMixin, viewsets.ModelViewSet
+    AdminWritePermissionMixin,
+    SafeQuerysetMixin,
+    PublicQuerysetMixin,
+    viewsets.ModelViewSet,
 ):
     """Base class for menu items that exposes the common public actions."""
 
