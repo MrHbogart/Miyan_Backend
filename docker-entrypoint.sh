@@ -4,6 +4,31 @@ set -euo pipefail
 # Allow overriding the command but always ensure migrations and static files are ready.
 python manage.py collectstatic --clear --noinput
 python - <<'PY'
+import os
+import time
+
+import django
+from django.db import connections
+from django.db.utils import OperationalError
+
+django.setup()
+
+timeout = int(os.environ.get('DB_WAIT_TIMEOUT', '60'))
+interval = max(1, int(os.environ.get('DB_WAIT_INTERVAL', '2')))
+deadline = time.monotonic() + timeout
+connection = connections['default']
+
+while True:
+    try:
+        connection.ensure_connection()
+        connection.close()
+        break
+    except OperationalError as exc:
+        if time.monotonic() >= deadline:
+            raise RuntimeError('Database is unavailable') from exc
+        time.sleep(interval)
+PY
+python - <<'PY'
 from pathlib import Path
 import os
 import shutil
