@@ -20,8 +20,10 @@ connection = connections['default']
 
 while True:
     try:
+        print('waiting-for-db', flush=True)
         connection.ensure_connection()
         connection.close()
+        print('db-ready', flush=True)
         break
     except OperationalError as exc:
         if time.monotonic() >= deadline:
