@@ -115,8 +115,15 @@ DATABASE_URL = os.getenv('DATABASE_URL')
 POSTGRES_DB = os.getenv('POSTGRES_DB')
 POSTGRES_USER = os.getenv('POSTGRES_USER')
 POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD')
-POSTGRES_HOST = os.getenv('POSTGRES_HOST', 'localhost')
+# Detect running in Docker: either explicit env var or presence of /.dockerenv
+IN_DOCKER = env_bool('DJANGO_IN_DOCKER', False) or Path('/.dockerenv').exists()
+
+# Allow overriding POSTGRES_HOST via env var; otherwise default to 'db'
+# when running in Docker (compose) else 'localhost' for local dev.
+POSTGRES_HOST = os.getenv('POSTGRES_HOST')
 POSTGRES_PORT = os.getenv('POSTGRES_PORT', '5432')
+if not POSTGRES_HOST:
+    POSTGRES_HOST = 'db' if IN_DOCKER else 'localhost'
 
 if RUNNING_TESTS:
     DATABASES = {
@@ -225,7 +232,6 @@ CORS_ALLOWED_ORIGINS = get_list_from_env(
         'http://127.0.0.1:3000',
         'https://miyangroup.com',
         'https://www.miyangroup.com',
-        'https://app.miyangroup.com',
     ],
 )
 
@@ -239,8 +245,6 @@ CSRF_TRUSTED_ORIGINS = get_list_from_env(
         'http://127.0.0.1:3000',
         'https://miyangroup.com',
         'https://www.miyangroup.com',
-        'https://app.miyangroup.com',
-        'https://api.miyangroup.com',
     ],
 )
 
@@ -261,7 +265,15 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool(
     'DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS', not DEBUG
 )
 SECURE_HSTS_PRELOAD = env_bool('DJANGO_SECURE_HSTS_PRELOAD', not DEBUG)
-TRUST_PROXY_HEADERS = env_bool('DJANGO_TRUST_PROXY_HEADERS', not DEBUG)
+
+# Determine whether to trust reverse proxy headers. Default to True when
+# running inside Docker behind a host nginx (IN_DOCKER), otherwise respect
+# explicit env var or fall back to not DEBUG.
+if os.getenv('DJANGO_TRUST_PROXY_HEADERS') is None:
+    TRUST_PROXY_HEADERS = bool(IN_DOCKER or (not DEBUG))
+else:
+    TRUST_PROXY_HEADERS = env_bool('DJANGO_TRUST_PROXY_HEADERS', not DEBUG)
+
 USE_X_FORWARDED_HOST = env_bool('DJANGO_USE_X_FORWARDED_HOST', TRUST_PROXY_HEADERS)
 SECURE_PROXY_SSL_HEADER = (
     ('HTTP_X_FORWARDED_PROTO', 'https') if TRUST_PROXY_HEADERS else None

@@ -7,7 +7,6 @@ MANAGE := $(PYTHON) manage.py
 install:
 \t$(PIP) install --upgrade pip
 \t$(PIP) install -r requirements.txt
-\t$(PIP) install -r requirements-dev.txt
 
 lint:
 \t$(PYTHON) -m ruff check config core miyanBeresht miyanGroup miyanMadi tests
