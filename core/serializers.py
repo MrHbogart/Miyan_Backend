@@ -48,20 +48,17 @@ def build_menu_item_payload(
     default_image: str = DEFAULT_MENU_IMAGE,
 ) -> dict[str, Any]:
     """Transform nested item serializer output to the public representation."""
-    image = item_data.get('image_url') or item_data.get('image') or default_image
-    price_value = item_data.get('price')
+    # Only use the formatted price fields provided by the models.
+    image = default_image
     return {
-        'name': {
-            'fa': item_data.get('name_fa'),
-            'en': item_data.get('name_en'),
-        },
+        'name': {'fa': item_data.get('name_fa'), 'en': item_data.get('name_en')},
         'description': {
             'fa': item_data.get('description_fa') or '',
             'en': item_data.get('description_en') or '',
         },
         'price': {
-            'fa': format_price_display(price_value, item_data.get('price_fa'), 'fa'),
-            'en': format_price_display(price_value, item_data.get('price_en'), 'en'),
+            'fa': item_data.get('price_fa') or '',
+            'en': item_data.get('price_en') or '',
         },
         'image': image,
     }
@@ -83,7 +80,6 @@ def transform_menu_payload(
 ) -> dict[str, Any]:
     """Convert internal serializer data into the public API contract."""
     sections_out: list[dict[str, Any]] = []
-    todays_items: list[dict[str, Any]] = []
 
     for section in menu_data.get('sections') or []:
         if not section.get('is_active'):
@@ -91,22 +87,12 @@ def transform_menu_payload(
 
         section_items = []
         for item in section.get('items') or []:
-            if not item.get('is_available'):
-                continue
-            section_items.append(
-                build_menu_item_payload(item, default_image=default_image)
-            )
-            if include_todays and item.get('is_todays_special'):
-                todays_items.append(
-                    build_menu_item_payload(item, default_image=default_image)
-                )
+            # include all items; availability flags removed to simplify model
+            section_items.append(build_menu_item_payload(item, default_image=default_image))
 
         sections_out.append(
             {
-                'title': {
-                    'fa': section.get('title_fa'),
-                    'en': section.get('title_en'),
-                },
+                'title': {'fa': section.get('title_fa'), 'en': section.get('title_en')},
                 'items': section_items,
             }
         )
@@ -119,16 +105,7 @@ def transform_menu_payload(
         'sections': sections_out,
     }
 
-    if include_todays:
-        payload['todays'] = {
-            'title': todays_title,
-            'sections': [
-                {
-                    'title': todays_section_title,
-                    'items': todays_items,
-                }
-            ],
-        }
+    # Today's special aggregation removed — frontend will not receive a separate 'todays' section
 
     return payload
 

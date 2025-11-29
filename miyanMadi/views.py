@@ -1,16 +1,9 @@
 from rest_framework.decorators import action
 
-from core.viewsets import (
-    BaseMenuItemViewSet,
-    BaseMenuSectionViewSet,
-    BaseMenuViewSet,
-)
-from .models import MadiMenu, MadiMenuSection, MadiMenuItem
-from .serializers import (
-    MadiMenuSerializer, 
-    MadiMenuSectionSerializer, 
-    MadiMenuItemSerializer
-)
+from core.viewsets import BaseMenuItemViewSet, BaseMenuViewSet
+from .models import MadiMenu, MadiMenuItem
+from .serializers import MadiMenuSerializer, MadiMenuItemSerializer
+
 
 class MadiMenuViewSet(BaseMenuViewSet):
     """API endpoint for Madi menus."""
@@ -25,13 +18,6 @@ class MadiMenuViewSet(BaseMenuViewSet):
         return self.respond_with_menu_type(
             'breakfast', not_found_message=self.breakfast_not_found_message
         )
-
-
-class MadiMenuSectionViewSet(BaseMenuSectionViewSet):
-    """API endpoint for Madi menu sections."""
-
-    queryset = MadiMenuSection.objects.all().prefetch_related('items')
-    serializer_class = MadiMenuSectionSerializer
 
 
 class MadiMenuItemViewSet(BaseMenuItemViewSet):

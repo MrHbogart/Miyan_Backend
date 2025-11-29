@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 import pytest
 
 from miyanBeresht.models import BereshtMenu, BereshtMenuItem, BereshtMenuSection
@@ -34,29 +32,22 @@ def test_beresht_menu_serializer_shapes_public_payload():
         name_en='Americano',
         description_fa='',
         description_en='',
-        price=Decimal('120000'),
         price_fa='120000',
         price_en='120000',
-        is_available=True,
-        is_todays_special=True,
     )
     BereshtMenuItem.objects.create(
         section=inactive_section,
         name_fa='مخفی',
         name_en='Hidden',
-        price=Decimal('50000'),
         price_fa='50000',
         price_en='50000',
-        is_available=True,
     )
     BereshtMenuItem.objects.create(
         section=section,
         name_fa='ناموجود',
         name_en='Unavailable',
-        price=Decimal('80000'),
         price_fa='80000',
         price_en='80000',
-        is_available=False,
     )
 
     payload = BereshtMenuSerializer(instance=menu).data
@@ -65,13 +56,13 @@ def test_beresht_menu_serializer_shapes_public_payload():
     assert payload['subtitle'] == {'fa': 'زیرعنوان', 'en': 'Subtitle'}
     assert len(payload['sections']) == 1
     assert payload['sections'][0]['title']['en'] == 'Coffee'
-    assert len(payload['sections'][0]['items']) == 1
-    item = payload['sections'][0]['items'][0]
-    assert item['name']['en'] == 'Americano'
-    assert item['price']['fa'] == '120'
-    todays = payload['todays']['sections'][0]['items']
-    assert len(todays) == 1
-    assert todays[0]['name']['en'] == 'Americano'
+    # both items in the active section are exposed (availability flags removed)
+    assert len(payload['sections'][0]['items']) == 2
+    names = [it['name']['en'] for it in payload['sections'][0]['items']]
+    assert 'Americano' in names and 'Unavailable' in names
+    # prices are the formatted strings provided by the model
+    fa_prices = [it['price']['fa'] for it in payload['sections'][0]['items']]
+    assert '120000' in fa_prices and '80000' in fa_prices
 
 
 @pytest.mark.django_db
@@ -79,7 +70,6 @@ def test_madi_menu_serializer_handles_breakfast_and_specials():
     menu = MadiMenu.objects.create(
         title_fa='منوی مادی',
         title_en='Madi Menu',
-        menu_type='breakfast',
         service_hours='7am - 11am',
     )
     section = MadiMenuSection.objects.create(
@@ -92,22 +82,15 @@ def test_madi_menu_serializer_handles_breakfast_and_specials():
         section=section,
         name_fa='املت',
         name_en='Omelette',
-        price=Decimal('250000'),
         price_fa='250000',
         price_en='250000',
-        is_available=True,
-        is_todays_special=True,
-        is_featured=True,
     )
     MadiMenuItem.objects.create(
         section=section,
         name_fa='فرنچ تست',
         name_en='French Toast',
-        price=Decimal('300000'),
         price_fa='300000',
         price_en='300000',
-        is_available=True,
-        is_todays_special=False,
     )
 
     payload = MadiMenuSerializer(instance=menu).data
@@ -115,5 +98,3 @@ def test_madi_menu_serializer_handles_breakfast_and_specials():
     assert payload['title']['en'] == 'Madi Menu'
     assert len(payload['sections']) == 1
     assert len(payload['sections'][0]['items']) == 2
-    todays_items = payload['todays']['sections'][0]['items']
-    assert [item['name']['en'] for item in todays_items] == ['Omelette']

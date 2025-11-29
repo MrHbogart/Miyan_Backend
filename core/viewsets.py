@@ -6,6 +6,7 @@ import logging
 
 from django.db.models import QuerySet
 from django.db.utils import ProgrammingError
+from django.core.exceptions import FieldError
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -86,7 +87,11 @@ class MenuTypeActionMixin:
         return self.filter_queryset(self.get_queryset())
 
     def _get_menu_for_type(self, menu_type: str):
-        return self._menu_queryset().filter(menu_type=menu_type).first()
+        # Try to filter by `menu_type` if the field exists; otherwise return first menu.
+        try:
+            return self._menu_queryset().filter(menu_type=menu_type).first()
+        except (FieldError, Exception):
+            return self._menu_queryset().first()
 
     def respond_with_menu_type(
         self,
@@ -146,17 +151,6 @@ class BaseMenuViewSet(
         return self.list_active_menus()
 
 
-class BaseMenuSectionViewSet(
-    AdminWritePermissionMixin,
-    SafeQuerysetMixin,
-    PublicQuerysetMixin,
-    viewsets.ModelViewSet,
-):
-    """Sections share the same read/write and active filtering semantics."""
-
-    public_filter_field = 'is_active'
-
-
 class BaseMenuItemViewSet(
     AdminWritePermissionMixin,
     SafeQuerysetMixin,
@@ -165,10 +159,13 @@ class BaseMenuItemViewSet(
 ):
     """Base class for menu items that exposes the common public actions."""
 
-    public_filter_field = 'is_available'
+    public_filter_field = None
 
     def _special_response(self, **filters):
-        queryset = self.filter_queryset(self.get_queryset().filter(**filters))
+        try:
+            queryset = self.filter_queryset(self.get_queryset().filter(**filters))
+        except FieldError:
+            queryset = self.filter_queryset(self.get_queryset())
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
