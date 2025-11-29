@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import BereshtMenu, BereshtMenuItem
+from .models import BereshtMenu, BereshtMenuSection, BereshtMenuItem
 
 
 @admin.register(BereshtMenuItem)
@@ -16,8 +16,15 @@ class BereshtMenuItemInline(admin.TabularInline):
     fields = ['name_en', 'name_fa', 'price_fa', 'display_order']
 
 
+@admin.register(BereshtMenuSection)
+class BereshtMenuSectionAdmin(admin.ModelAdmin):
+    list_display = ['title_en', 'title_fa', 'menu', 'display_order', 'is_active']
+    list_filter = ['is_active', 'menu']
+    inlines = [BereshtMenuItemInline]
+
+
 @admin.register(BereshtMenu)
 class BereshtMenuAdmin(admin.ModelAdmin):
     list_display = ['title_en', 'title_fa', 'is_active', 'created_at']
     list_filter = ['is_active']
-    inlines = [BereshtMenuItemInline]
+    inlines = []
