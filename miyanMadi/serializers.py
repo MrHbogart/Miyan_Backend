@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from core.serializers import MenuPresentationSerializer
-from .models import MadiMenu, MadiMenuItem
+from .models import MadiMenu, MadiMenuSection, MadiMenuItem
 
 
 class MadiMenuItemSerializer(serializers.ModelSerializer):
@@ -10,6 +10,17 @@ class MadiMenuItemSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name_fa', 'name_en', 'description_fa', 'description_en',
             'price_fa', 'price_en', 'display_order'
+        ]
+
+
+class MadiMenuSectionSerializer(serializers.ModelSerializer):
+    items = MadiMenuItemSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = MadiMenuSection
+        fields = [
+            'id', 'title_fa', 'title_en', 'description_fa', 'description_en',
+            'display_order', 'is_active', 'items'
         ]
 
 

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from core.serializers import MenuPresentationSerializer
-from .models import BereshtMenu, BereshtMenuItem
+from .models import BereshtMenu, BereshtMenuSection, BereshtMenuItem
 
 
 class BereshtMenuItemSerializer(serializers.ModelSerializer):
@@ -10,6 +10,17 @@ class BereshtMenuItemSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name_fa', 'name_en', 'description_fa', 'description_en',
             'price_fa', 'price_en', 'display_order'
+        ]
+
+
+class BereshtMenuSectionSerializer(serializers.ModelSerializer):
+    items = BereshtMenuItemSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = BereshtMenuSection
+        fields = [
+            'id', 'title_fa', 'title_en', 'description_fa', 'description_en',
+            'display_order', 'is_active', 'items'
         ]
 
 
