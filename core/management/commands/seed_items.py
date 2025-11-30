@@ -16,8 +16,8 @@ class Command(BaseCommand):
         parser.add_argument(
             '--visuals-dir',
             type=str,
-            default=None,
-            help='Path to visuals directory (default: uses Django MEDIA_ROOT)'
+            default='/app/Miyan_Visuals',
+            help='Path to visuals directory (default: /app/Miyan_Visuals)'
         )
         parser.add_argument(
             '--items-per-section',
@@ -27,7 +27,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        visuals_dir = options['visuals_dir'] or settings.MEDIA_ROOT
+        visuals_dir = options['visuals_dir']
         items_per_section = options['items_per_section']
 
         self.stdout.write(f"Visuals dir: {visuals_dir}")
@@ -195,12 +195,20 @@ class Command(BaseCommand):
         return None
 
     def _find_item_model(self, section, all_models):
-        """Find item model that FK's to the section."""
+        """Find concrete item model that FK's to the section."""
+        section_class_name = section.__class__.__name__
+        # Map section model name to item model name
+        # e.g., BereshtMenuSection -> BereshtMenuItem, MadiMenuSection -> MadiMenuItem
+        brand_prefix = section_class_name.replace('MenuSection', '')
+        expected_item_model_name = f"{brand_prefix}MenuItem"
+        
         for model in all_models:
-            if model.__name__.endswith('Item'):
+            if model.__name__ == expected_item_model_name:
+                # Verify it has FK to the section model
                 for field in model._meta.fields:
                     if getattr(field, 'related_model', None) == section.__class__:
                         return model
+        
         return None
 
     def _set_section_fk(self, item, section, section_model):
