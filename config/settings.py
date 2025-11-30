@@ -186,8 +186,10 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
+# Allow overriding MEDIA_ROOT via env var to support containers where the default
+# path isn't writable (e.g., host-mounted dirs with restrictive permissions).
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = os.getenv('DJANGO_MEDIA_ROOT', os.path.join(BASE_DIR, 'media'))
 
 STORAGES = {
     'default': {

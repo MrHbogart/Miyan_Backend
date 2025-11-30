@@ -30,6 +30,9 @@ services:
       interval: 20s
       timeout: 5s
       retries: 5
+    volumes:
+      - media_data:/app/media
 
 volumes:
   postgres_data:
+  media_data:

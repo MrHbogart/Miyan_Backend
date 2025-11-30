@@ -36,6 +36,24 @@ while True:
         time.sleep(interval)
 PY
 
+# Determine a writable MEDIA_ROOT. Prefer the default in the project (/app/media).
+# If that's not writable (common when a host directory is mounted with restrictive
+# permissions), fall back to /tmp/media which is writable by the container user.
+DEFAULT_MEDIA="/app/media"
+if [ -d "$DEFAULT_MEDIA" ] && [ -w "$DEFAULT_MEDIA" ]; then
+    : # default is writable, use it
+elif [ ! -e "$DEFAULT_MEDIA" ]; then
+    # If we can create the default media dir, do so; otherwise fallback
+    if mkdir -p "$DEFAULT_MEDIA" 2>/dev/null; then
+        :
+    else
+        export DJANGO_MEDIA_ROOT=/tmp/media
+    fi
+else
+    # exists but not writable
+    export DJANGO_MEDIA_ROOT=/tmp/media
+fi
+
 echo "Preparing static & media permissions..."
 python - <<'PY'
 from pathlib import Path

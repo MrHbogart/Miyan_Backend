@@ -6,6 +6,7 @@ from django.apps import apps
 from django.core.files import File
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+from django.conf import settings
 
 
 class Command(BaseCommand):
@@ -15,8 +16,8 @@ class Command(BaseCommand):
         parser.add_argument(
             '--visuals-dir',
             type=str,
-            default='/app/Miyan_Visuals',
-            help='Path to visuals directory (default: /app/Miyan_Visuals)'
+            default=None,
+            help='Path to visuals directory (default: uses Django MEDIA_ROOT)'
         )
         parser.add_argument(
             '--items-per-menu',
@@ -26,7 +27,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        visuals_dir = options['visuals_dir']
+        visuals_dir = options['visuals_dir'] or settings.MEDIA_ROOT
         num_items = options['items_per_menu']
 
         self.stdout.write(f"Visuals dir: {visuals_dir}")
@@ -97,8 +98,8 @@ class Command(BaseCommand):
 
                             item.save()
 
-                            # attach random image
-                            if images and hasattr(item, 'image') and item.image:
+                            # attach random image (attach even if item.image is empty)
+                            if images and hasattr(item, 'image'):
                                 img_path = random.choice(images)
                                 try:
                                     with open(img_path, 'rb') as fp:
