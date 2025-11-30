@@ -67,6 +67,19 @@ media_root = Path(settings.MEDIA_ROOT)
 static_root.mkdir(parents=True, exist_ok=True)
 media_root.mkdir(parents=True, exist_ok=True)
 
+# Create subdirectories that Django's upload_to will use
+media_subdirs = [
+    'menu_items',
+    'menu_items/videos',
+]
+for subdir in media_subdirs:
+    subdir_path = media_root / subdir
+    subdir_path.mkdir(parents=True, exist_ok=True)
+    try:
+        os.chmod(subdir_path, 0o755)
+    except PermissionError:
+        pass
+
 def set_permissions(root: Path) -> None:
     for current, dirs, files in os.walk(root):
         try:
