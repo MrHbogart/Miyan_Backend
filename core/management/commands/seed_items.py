@@ -33,17 +33,25 @@ class Command(BaseCommand):
         self.stdout.write(f"Visuals dir: {visuals_dir}")
         self.stdout.write(f"Items per section: {items_per_section}")
 
-        # Collect image files from visuals/items/
+        # Collect image files from visuals/items/ and root visuals/
         images_dir = os.path.join(visuals_dir, 'items')
         images = []
+        
+        # Check items subdirectory first
         if os.path.isdir(images_dir):
             for fname in os.listdir(images_dir):
                 fpath = os.path.join(images_dir, fname)
                 if os.path.isfile(fpath) and fname.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
                     images.append(fpath)
-            self.stdout.write(self.style.SUCCESS(f"Found {len(images)} image(s) in {images_dir}"))
-        else:
-            self.stdout.write(self.style.WARNING(f"Images dir not found: {images_dir}"))
+        
+        # Also check root visuals directory for images
+        if os.path.isdir(visuals_dir):
+            for fname in os.listdir(visuals_dir):
+                fpath = os.path.join(visuals_dir, fname)
+                if os.path.isfile(fpath) and fname.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
+                    images.append(fpath)
+        
+        self.stdout.write(self.style.SUCCESS(f"Found {len(images)} total image(s)"))
 
         # Collect video files from visuals/items/
         videos = []
@@ -52,43 +60,40 @@ class Command(BaseCommand):
                 fpath = os.path.join(images_dir, fname)
                 if os.path.isfile(fpath) and fname.lower().endswith(('.mp4', '.webm', '.mov', '.avi')):
                     videos.append(fpath)
-            self.stdout.write(self.style.SUCCESS(f"Found {len(videos)} video(s) in {images_dir}"))
-        else:
-            self.stdout.write(self.style.WARNING(f"Videos dir not found: {images_dir}"))
+        
+        self.stdout.write(self.style.SUCCESS(f"Found {len(videos)} total video(s)"))
 
-        # Find menu and section models
-        all_models = list(apps.get_models())
-        menu_models = [m for m in all_models if m.__name__.endswith('Menu') and not m.__name__.endswith('MenuItem')]
-        section_models = {m.__name__: m for m in all_models if m.__name__.endswith('Section')}
+        # Map brands to their models using explicit imports
+        from miyanBeresht.models import BereshtMenu, BereshtMenuSection, BereshtMenuItem
+        from miyanMadi.models import MadiMenu, MadiMenuSection, MadiMenuItem
 
-        self.stdout.write(f"Menu models: {[m.__name__ for m in menu_models]}")
-        self.stdout.write(f"Section models: {list(section_models.keys())}")
-
-        if not menu_models:
-            raise CommandError("No menu models found.")
+        brand_configs = [
+            {
+                'name': 'Beresht',
+                'menu_model': BereshtMenu,
+                'section_model': BereshtMenuSection,
+                'item_model': BereshtMenuItem,
+            },
+            {
+                'name': 'Madi',
+                'menu_model': MadiMenu,
+                'section_model': MadiMenuSection,
+                'item_model': MadiMenuItem,
+            },
+        ]
 
         total_items = 0
 
         with transaction.atomic():
-            for menu_model in menu_models:
-                brand_name = menu_model.__module__.split('.')[0]  # e.g., 'miyanBeresht' or 'miyanMadi'
+            for brand_config in brand_configs:
+                brand_name = brand_config['name']
+                menu_model = brand_config['menu_model']
+                section_model = brand_config['section_model']
+                item_model = brand_config['item_model']
+
                 self.stdout.write(f"\n{'='*60}")
                 self.stdout.write(f"Brand: {brand_name}")
                 self.stdout.write(f"{'='*60}")
-
-                # Find the section model for this brand
-                section_model_name = f"{brand_name.split('miyan')[1].capitalize()}MenuSection"
-                section_model = section_models.get(section_model_name)
-
-                if not section_model:
-                    self.stdout.write(self.style.ERROR(f"Section model not found for {brand_name}"))
-                    continue
-
-                # Find the item model for this brand
-                item_model = self._find_item_model(section_model, all_models)
-                if not item_model:
-                    self.stdout.write(self.style.ERROR(f"Item model not found for {section_model_name}"))
-                    continue
 
                 # Create two menus: "Menu" and "Today's Special"
                 menus_to_create = [
@@ -122,7 +127,7 @@ class Command(BaseCommand):
 
                     for idx, section_data in enumerate(section_types):
                         section, created = section_model.objects.get_or_create(
-                            **{self._get_menu_fk_name(section_model): menu},
+                            menu=menu,
                             title_en=section_data['title_en'],
                             defaults={
                                 'title_fa': section_data['title_fa'],
@@ -141,44 +146,36 @@ class Command(BaseCommand):
                         # Create items for this section
                         for item_idx in range(items_per_section):
                             item_name_idx = total_items + item_idx + 1
-                            item = item_model()
-
-                            # Set basic fields
-                            if hasattr(item, 'name_en'):
-                                item.name_en = f"Item {item_name_idx}"
-                            if hasattr(item, 'name_fa'):
-                                item.name_fa = f"غذای {item_name_idx}"
-                            if hasattr(item, 'description_en'):
-                                item.description_en = f"Delicious {section_data['title_en'].lower()} item"
-                            if hasattr(item, 'description_fa'):
-                                item.description_fa = f"یک {section_data['title_fa']} خوشمزه"
-                            if hasattr(item, 'price_fa'):
-                                item.price_fa = str(random.randint(50000, 250000))
-                            if hasattr(item, 'price_en'):
-                                item.price_en = item.price_fa
-
-                            # Set section FK
-                            self._set_section_fk(item, section, section_model)
-
+                            
+                            item = item_model(
+                                section=section,
+                                name_en=f"Item {item_name_idx}",
+                                name_fa=f"غذای {item_name_idx}",
+                                description_en=f"Delicious {section_data['title_en'].lower()} item",
+                                description_fa=f"یک {section_data['title_fa']} خوشمزه",
+                                price_fa=str(random.randint(50000, 250000)),
+                                display_order=item_idx + 1,
+                            )
+                            item.price_en = item.price_fa
                             item.save()
 
                             # Attach random image
-                            if images and hasattr(item, 'image'):
+                            if images:
                                 img_path = random.choice(images)
                                 try:
                                     with open(img_path, 'rb') as fp:
                                         item.image.save(os.path.basename(img_path), File(fp), save=True)
                                 except Exception as e:
-                                    self.stdout.write(self.style.WARNING(f"      Failed to attach image: {e}"))
+                                    self.stdout.write(self.style.WARNING(f"      Warning: Failed to attach image: {e}"))
 
                             # Attach random video
-                            if videos and hasattr(item, 'video'):
+                            if videos:
                                 video_path = random.choice(videos)
                                 try:
                                     with open(video_path, 'rb') as fp:
                                         item.video.save(os.path.basename(video_path), File(fp), save=True)
                                 except Exception as e:
-                                    self.stdout.write(self.style.WARNING(f"      Failed to attach video: {e}"))
+                                    self.stdout.write(self.style.WARNING(f"      Warning: Failed to attach video: {e}"))
 
                             self.stdout.write(f"    ✓ Item {item_name_idx}: {item.name_en}")
                             total_items += 1
@@ -186,34 +183,3 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f"\n{'='*60}"))
         self.stdout.write(self.style.SUCCESS(f"✓ Seeding finished. Created {total_items} items."))
 
-
-    def _get_menu_fk_name(self, section_model):
-        """Get the FK field name pointing to the menu model."""
-        for field in section_model._meta.fields:
-            if hasattr(field, 'related_model') and field.related_model.__name__.endswith('Menu'):
-                return field.name
-        return None
-
-    def _find_item_model(self, section, all_models):
-        """Find concrete item model that FK's to the section."""
-        section_class_name = section.__class__.__name__
-        # Map section model name to item model name
-        # e.g., BereshtMenuSection -> BereshtMenuItem, MadiMenuSection -> MadiMenuItem
-        brand_prefix = section_class_name.replace('MenuSection', '')
-        expected_item_model_name = f"{brand_prefix}MenuItem"
-        
-        for model in all_models:
-            if model.__name__ == expected_item_model_name:
-                # Verify it has FK to the section model
-                for field in model._meta.fields:
-                    if getattr(field, 'related_model', None) == section.__class__:
-                        return model
-        
-        return None
-
-    def _set_section_fk(self, item, section, section_model):
-        """Set the section FK on the item."""
-        for field in item._meta.fields:
-            if getattr(field, 'related_model', None) == section_model:
-                setattr(item, field.name, section)
-                return
