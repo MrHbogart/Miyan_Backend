@@ -9,7 +9,7 @@ class BereshtMenuItemSerializer(serializers.ModelSerializer):
         model = BereshtMenuItem
         fields = [
             'id', 'name_fa', 'name_en', 'description_fa', 'description_en',
-            'price_fa', 'price_en', 'display_order'
+            'price_fa', 'price_en', 'image', 'video', 'display_order'
         ]
 
 

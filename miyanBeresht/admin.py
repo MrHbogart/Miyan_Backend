@@ -8,12 +8,26 @@ class BereshtMenuItemAdmin(admin.ModelAdmin):
     list_filter = ['section']
     search_fields = ['name_en', 'name_fa', 'description_en', 'description_fa']
     list_editable = ['price_fa', 'display_order']
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('name_fa', 'name_en', 'description_fa', 'description_en', 'section')
+        }),
+        ('Pricing', {
+            'fields': ('price_fa', 'price_en')
+        }),
+        ('Media', {
+            'fields': ('image', 'video')
+        }),
+        ('Organization', {
+            'fields': ('display_order',)
+        }),
+    )
 
 
 class BereshtMenuItemInline(admin.TabularInline):
     model = BereshtMenuItem
     extra = 1
-    fields = ['name_en', 'name_fa', 'price_fa', 'display_order']
+    fields = ['name_en', 'name_fa', 'price_fa', 'image', 'video', 'display_order']
 
 
 @admin.register(BereshtMenuSection)
