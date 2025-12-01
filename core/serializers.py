@@ -77,8 +77,9 @@ def build_menu_item_payload(
     request=None,
 ) -> dict[str, Any]:
     """Transform nested item serializer output to the public representation."""
-    # Only use the formatted price fields provided by the models.
-    image = _build_media_url(item_data.get('image'), request) or default_image
+    image = _build_media_url(item_data.get('image'), request)
+    if not image and default_image:
+        image = default_image
     video = _build_media_url(item_data.get('video'), request)
     return {
         'name': {'fa': item_data.get('name_fa'), 'en': item_data.get('name_en')},
