@@ -55,7 +55,7 @@ log "Preparing static and media directories..."
 prepare_directories
 
 log "Checking for new migrations..."
-run_as_app python manage.py makemigrations --noinput
+run_as_app python manage.py makemigrations core miyanBeresht miyanMadi miyanGroup --noinput
 
 log "Waiting for database..."
 wait_for_db
