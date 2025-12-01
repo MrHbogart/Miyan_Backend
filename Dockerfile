@@ -9,34 +9,36 @@ WORKDIR /app
 RUN python -m venv ${VENV_PATH}
 ENV PATH="${VENV_PATH}/bin:${PATH}"
 
-COPY requirements.txt .
+COPY requirements-prod.txt .
 RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements-prod.txt
 
 FROM python:3.11-slim AS final
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DJANGO_SETTINGS_MODULE=config.settings \
-    PATH="/opt/venv/bin:${PATH}"
+    VENV_PATH="/opt/venv" \
+    APP_USER="django" \
+    APP_HOME="/home/django"
 
 WORKDIR /app
-COPY --from=builder /opt/venv /opt/venv
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gosu && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder ${VENV_PATH} ${VENV_PATH}
+ENV PATH="${VENV_PATH}/bin:${PATH}"
+
 COPY . .
 
-# Create an unprivileged user to run the app
 RUN set -eux; \
-    groupadd --system miyan || true; \
-    useradd --system --gid miyan --home /home/miyan --shell /bin/sh miyan || true; \
-    mkdir -p /home/miyan; \
-    chown -R miyan:miyan /home/miyan /app /opt/venv; \
-    chmod -R go-rwx /opt/venv
+    groupadd --system "${APP_USER}" || true; \
+    useradd --system --gid "${APP_USER}" --home "${APP_HOME}" --shell /bin/bash "${APP_USER}" || true; \
+    mkdir -p "${APP_HOME}" /app/staticfiles /app/media; \
+    chown -R "${APP_USER}:${APP_USER}" "${APP_HOME}" /app "${VENV_PATH}"; \
+    chmod +x /app/docker-entrypoint.sh
 
-RUN chmod +x docker-entrypoint.sh
-
-ENV HOME=/home/miyan
-
-USER miyan
-
-ENTRYPOINT ["./docker-entrypoint.sh"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--threads", "2", "--log-file", "-"]
