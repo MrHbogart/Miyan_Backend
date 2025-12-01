@@ -5,7 +5,9 @@ from __future__ import annotations
 from decimal import Decimal, InvalidOperation
 from typing import Any, Mapping
 
+from django.conf import settings
 from rest_framework import serializers
+from urllib.parse import urljoin
 
 DEFAULT_MENU_IMAGE = '/images/medium/default-menu.jpg'
 DEFAULT_TODAYS_TITLE = {'fa': 'آیتم‌های تازه امروز', 'en': "Today's Fresh"}
@@ -42,14 +44,42 @@ def format_price_display(value: Any, fallback: str | None, lang: str) -> str:
     return f"IRR {formatted}"
 
 
+def _build_media_url(value: Any, request=None) -> str | None:
+    """Return an absolute or relative media URL for image/video fields."""
+    if not value:
+        return None
+
+    if hasattr(value, 'url'):
+        value = value.url
+
+    if not isinstance(value, str):
+        return None
+
+    if value.startswith('http://') or value.startswith('https://'):
+        return value
+
+    path = value
+    if path.startswith('/'):
+        url = path
+    else:
+        media_url = settings.MEDIA_URL or '/media/'
+        url = urljoin(media_url, path)
+
+    if request is not None:
+        return request.build_absolute_uri(url)
+    return url
+
+
 def build_menu_item_payload(
     item_data: Mapping[str, Any],
     *,
     default_image: str = DEFAULT_MENU_IMAGE,
+    request=None,
 ) -> dict[str, Any]:
     """Transform nested item serializer output to the public representation."""
     # Only use the formatted price fields provided by the models.
-    image = default_image
+    image = _build_media_url(item_data.get('image'), request) or default_image
+    video = _build_media_url(item_data.get('video'), request)
     return {
         'name': {'fa': item_data.get('name_fa'), 'en': item_data.get('name_en')},
         'description': {
@@ -61,6 +91,7 @@ def build_menu_item_payload(
             'en': item_data.get('price_en') or '',
         },
         'image': image,
+        'video': video,
     }
 
 
@@ -77,6 +108,7 @@ def transform_menu_payload(
     todays_section_title: Mapping[str, str] = DEFAULT_TODAYS_SECTION_TITLE,
     default_image: str = DEFAULT_MENU_IMAGE,
     include_todays: bool = True,
+    request=None,
 ) -> dict[str, Any]:
     """Convert internal serializer data into the public API contract."""
     sections_out: list[dict[str, Any]] = []
@@ -88,7 +120,11 @@ def transform_menu_payload(
         section_items = []
         for item in section.get('items') or []:
             # include all items; availability flags removed to simplify model
-            section_items.append(build_menu_item_payload(item, default_image=default_image))
+            section_items.append(
+                build_menu_item_payload(
+                    item, default_image=default_image, request=request
+                )
+            )
 
         sections_out.append(
             {
@@ -134,6 +170,7 @@ class MenuPresentationSerializer(serializers.ModelSerializer):
             todays_section_title=self.todays_section_title,
             default_image=self.default_image,
             include_todays=self.include_todays,
+            request=self.context.get('request') if hasattr(self, 'context') else None,
         )
 
         extra = self.get_extra_payload(instance, data)
