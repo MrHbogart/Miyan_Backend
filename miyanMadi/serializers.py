@@ -31,5 +31,5 @@ class MadiMenuSerializer(MenuPresentationSerializer):
         model = MadiMenu
         fields = [
             'id', 'title_fa', 'title_en', 'subtitle_fa', 'subtitle_en',
-            'service_hours', 'is_active', 'display_order', 'sections', 'created_at', 'updated_at'
+            'service_hours', 'is_active', 'show_images', 'display_order', 'sections', 'created_at', 'updated_at'
         ]

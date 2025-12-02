@@ -39,7 +39,7 @@ class MadiMenuSectionAdmin(admin.ModelAdmin):
 
 @admin.register(MadiMenu)
 class MadiMenuAdmin(admin.ModelAdmin):
-    list_display = ['title_en', 'title_fa', 'is_active', 'created_at']
-    list_filter = ['is_active']
+    list_display = ['title_en', 'title_fa', 'is_active', 'show_images', 'created_at']
+    list_filter = ['is_active', 'show_images']
     search_fields = ['title_en', 'title_fa', 'subtitle_en', 'subtitle_fa']
     inlines = []

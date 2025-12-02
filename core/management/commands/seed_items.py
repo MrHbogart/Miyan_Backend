@@ -1,16 +1,13 @@
 import os
 import random
-from pathlib import Path
 
-from django.apps import apps
 from django.core.files import File
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.db import transaction
-from django.conf import settings
 
 
 class Command(BaseCommand):
-    help = "Seed menus, sections, and items with images and videos for all menu models"
+    help = "Seed menus, sections, and items with images and GIFs for all menu models"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -53,15 +50,15 @@ class Command(BaseCommand):
         
         self.stdout.write(self.style.SUCCESS(f"Found {len(images)} total image(s)"))
 
-        # Collect video files from visuals/items/
-        videos = []
+        # Collect GIF files from visuals/items/
+        gifs = []
         if os.path.isdir(images_dir):
             for fname in os.listdir(images_dir):
                 fpath = os.path.join(images_dir, fname)
-                if os.path.isfile(fpath) and fname.lower().endswith(('.mp4', '.webm', '.mov', '.avi')):
-                    videos.append(fpath)
+                if os.path.isfile(fpath) and fname.lower().endswith('.gif'):
+                    gifs.append(fpath)
         
-        self.stdout.write(self.style.SUCCESS(f"Found {len(videos)} total video(s)"))
+        self.stdout.write(self.style.SUCCESS(f"Found {len(gifs)} total gif(s)"))
 
         # Map brands to their models using explicit imports
         from miyanBeresht.models import BereshtMenu, BereshtMenuSection, BereshtMenuItem
@@ -168,18 +165,17 @@ class Command(BaseCommand):
                                 except Exception as e:
                                     self.stdout.write(self.style.WARNING(f"      Warning: Failed to attach image: {e}"))
 
-                            # Attach random video
-                            if videos:
-                                video_path = random.choice(videos)
+                            # Attach random GIF "video"
+                            if gifs:
+                                gif_path = random.choice(gifs)
                                 try:
-                                    with open(video_path, 'rb') as fp:
-                                        item.video.save(os.path.basename(video_path), File(fp), save=True)
+                                    with open(gif_path, 'rb') as fp:
+                                        item.video.save(os.path.basename(gif_path), File(fp), save=True)
                                 except Exception as e:
-                                    self.stdout.write(self.style.WARNING(f"      Warning: Failed to attach video: {e}"))
+                                    self.stdout.write(self.style.WARNING(f"      Warning: Failed to attach GIF: {e}"))
 
                             self.stdout.write(f"    ✓ Item {item_name_idx}: {item.name_en}")
                             total_items += 1
 
         self.stdout.write(self.style.SUCCESS(f"\n{'='*60}"))
         self.stdout.write(self.style.SUCCESS(f"✓ Seeding finished. Created {total_items} items."))
-

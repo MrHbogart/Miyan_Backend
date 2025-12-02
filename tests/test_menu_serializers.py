@@ -54,6 +54,7 @@ def test_beresht_menu_serializer_shapes_public_payload():
 
     assert payload['title'] == {'fa': 'منو برشت', 'en': 'Beresht Menu'}
     assert payload['subtitle'] == {'fa': 'زیرعنوان', 'en': 'Subtitle'}
+    assert payload['show_images'] is True
     assert len(payload['sections']) == 1
     assert payload['sections'][0]['title']['en'] == 'Coffee'
     # both items in the active section are exposed (availability flags removed)
@@ -76,7 +77,6 @@ def test_madi_menu_serializer_handles_breakfast_and_specials():
         menu=menu,
         title_fa='صبحانه',
         title_en='Breakfast',
-        meal_type='breakfast',
     )
     MadiMenuItem.objects.create(
         section=section,
@@ -96,5 +96,34 @@ def test_madi_menu_serializer_handles_breakfast_and_specials():
     payload = MadiMenuSerializer(instance=menu).data
 
     assert payload['title']['en'] == 'Madi Menu'
+    assert payload['show_images'] is True
     assert len(payload['sections']) == 1
     assert len(payload['sections'][0]['items']) == 2
+
+
+@pytest.mark.django_db
+def test_menu_serializer_hides_images_when_disabled():
+    menu = BereshtMenu.objects.create(
+        title_fa='منو برشت',
+        title_en='Beresht Menu',
+        show_images=False,
+    )
+    section = BereshtMenuSection.objects.create(
+        menu=menu,
+        title_fa='قهوه',
+        title_en='Coffee',
+        is_active=True,
+    )
+    BereshtMenuItem.objects.create(
+        section=section,
+        name_fa='آمریکانو',
+        name_en='Americano',
+        price_fa='120000',
+        price_en='120000',
+    )
+
+    payload = BereshtMenuSerializer(instance=menu).data
+
+    assert payload['show_images'] is False
+    first_item = payload['sections'][0]['items'][0]
+    assert first_item['image'] is None

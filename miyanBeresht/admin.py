@@ -39,6 +39,6 @@ class BereshtMenuSectionAdmin(admin.ModelAdmin):
 
 @admin.register(BereshtMenu)
 class BereshtMenuAdmin(admin.ModelAdmin):
-    list_display = ['title_en', 'title_fa', 'is_active', 'created_at']
-    list_filter = ['is_active']
+    list_display = ['title_en', 'title_fa', 'is_active', 'show_images', 'created_at']
+    list_filter = ['is_active', 'show_images']
     inlines = []

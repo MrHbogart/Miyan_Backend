@@ -31,5 +31,5 @@ class BereshtMenuSerializer(MenuPresentationSerializer):
         model = BereshtMenu
         fields = [
             'id', 'title_fa', 'title_en', 'subtitle_fa', 'subtitle_en',
-            'is_active', 'display_order', 'sections', 'created_at', 'updated_at'
+            'is_active', 'show_images', 'display_order', 'sections', 'created_at', 'updated_at'
         ]

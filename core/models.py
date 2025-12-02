@@ -1,3 +1,4 @@
+from django.core.validators import FileExtensionValidator
 from django.db import models
 
 class BaseMenu(models.Model):
@@ -20,6 +21,11 @@ class BaseMenu(models.Model):
     )
     
     is_active = models.BooleanField(default=True, verbose_name="Is Active")
+    show_images = models.BooleanField(
+        default=True,
+        verbose_name="Show Images",
+        help_text="Toggle whether this menu renders item pictures",
+    )
     display_order = models.PositiveIntegerField(default=0, verbose_name="Display Order")
     
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Created At")
@@ -58,11 +64,12 @@ class MenuItem(models.Model):
     )
     
     video = models.FileField(
-        upload_to='menu_items/videos/%Y/%m/%d/',
+        upload_to='menu_items/gifs/%Y/%m/%d/',
         blank=True,
         null=True,
-        verbose_name="Item Video",
-        help_text="Short video of the item (MP4, WebM, etc.)"
+        verbose_name="Item Video (GIF)",
+        help_text="Animated GIF preview of the item",
+        validators=[FileExtensionValidator(['gif'])],
     )
     
     display_order = models.PositiveIntegerField(default=0, verbose_name="Display Order")

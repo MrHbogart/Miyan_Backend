@@ -74,12 +74,15 @@ def build_menu_item_payload(
     item_data: Mapping[str, Any],
     *,
     default_image: str = DEFAULT_MENU_IMAGE,
+    include_images: bool = True,
     request=None,
 ) -> dict[str, Any]:
     """Transform nested item serializer output to the public representation."""
-    image = _build_media_url(item_data.get('image'), request)
-    if not image and default_image:
-        image = default_image
+    image = None
+    if include_images:
+        image = _build_media_url(item_data.get('image'), request)
+        if not image and default_image:
+            image = default_image
     video = _build_media_url(item_data.get('video'), request)
     return {
         'name': {'fa': item_data.get('name_fa'), 'en': item_data.get('name_en')},
@@ -113,6 +116,7 @@ def transform_menu_payload(
 ) -> dict[str, Any]:
     """Convert internal serializer data into the public API contract."""
     sections_out: list[dict[str, Any]] = []
+    include_images = bool(menu_data.get('show_images', True))
 
     for section in menu_data.get('sections') or []:
         if not section.get('is_active'):
@@ -123,7 +127,10 @@ def transform_menu_payload(
             # include all items; availability flags removed to simplify model
             section_items.append(
                 build_menu_item_payload(
-                    item, default_image=default_image, request=request
+                    item,
+                    default_image=default_image if include_images else None,
+                    include_images=include_images,
+                    request=request,
                 )
             )
 
@@ -140,6 +147,7 @@ def transform_menu_payload(
             menu_data.get('subtitle_fa'), menu_data.get('subtitle_en')
         ),
         'sections': sections_out,
+        'show_images': include_images,
     }
 
     # Today's special aggregation removed — frontend will not receive a separate 'todays' section
