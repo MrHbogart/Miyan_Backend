@@ -19,7 +19,7 @@ if os.getenv('DJANGO_SKIP_DOTENV', '').lower() not in {'1', 'true', 'yes'}:
 def get_list_from_env(var_name, default):
     """Split comma separated env vars into a clean list."""
     raw_value = os.getenv(var_name)
-    if raw_value is None:
+    if raw_value is None or not raw_value.strip():
         return default
     return [item.strip() for item in raw_value.split(',') if item.strip()]
 
@@ -56,6 +56,9 @@ APP_COMMIT_SHA = os.getenv('APP_COMMIT_SHA', 'dev')
 ALLOWED_HOSTS = get_list_from_env(
     'DJANGO_ALLOWED_HOSTS', ['localhost', '127.0.0.1']
 )
+# Always allow local healthcheck/loopback hosts even when DJANGO_ALLOWED_HOSTS is set
+_local_hosts = {'localhost', '127.0.0.1'}
+ALLOWED_HOSTS = list(dict.fromkeys(list(ALLOWED_HOSTS) + list(_local_hosts)))
 
 LOG_LEVEL = os.getenv('DJANGO_LOG_LEVEL', 'DEBUG')
 

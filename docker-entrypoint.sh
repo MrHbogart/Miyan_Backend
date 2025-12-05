@@ -20,7 +20,7 @@ run_as_app() {
 }
 
 prepare_directories() {
-    mkdir -p "${STATIC_ROOT}" "${MEDIA_ROOT}"
+    mkdir -p "${STATIC_ROOT}" "${MEDIA_ROOT}" "${MEDIA_ROOT}/menu_items/gifs"
     if [ "$(id -u)" = "0" ]; then
         chown -R "${APP_USER}:${APP_USER}" "${STATIC_ROOT}" "${MEDIA_ROOT}" /app
     fi
