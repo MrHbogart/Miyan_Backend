@@ -3,6 +3,14 @@ from django.db import models
 import secrets
 
 
+# Use a named module-level function for the default bot token so Django's
+# migration writer can serialize a reference to it. Lambdas aren't serializable
+# which caused the `ValueError: Cannot serialize function: lambda` during
+# `makemigrations` in container startup.
+def generate_bot_token():
+    return secrets.token_hex(16)
+
+
 class Branch(models.Model):
     name = models.CharField(max_length=128)
     location = models.CharField(max_length=256, blank=True)
@@ -21,7 +29,7 @@ class Item(models.Model):
 
 class StaffProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    bot_token = models.CharField(max_length=64, unique=True, default=lambda: secrets.token_hex(16))
+    bot_token = models.CharField(max_length=64, unique=True, default=generate_bot_token)
     telegram_id = models.CharField(max_length=64, blank=True, null=True)
 
     def __str__(self):
