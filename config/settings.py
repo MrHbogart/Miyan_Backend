@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     'miyanBeresht',
     'miyanMadi',
     'miyanGroup',
+    'inventory',
 ]
 
 MIDDLEWARE = [
@@ -359,3 +360,6 @@ LOGGING = {
         },
     },
 }
+
+# Shared secret used by the telegram bot to request tokens securely
+BOT_SHARED_SECRET = os.getenv('TELEGRAM_SHARED_SECRET', '')
