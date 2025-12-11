@@ -78,7 +78,6 @@ INSTALLED_APPS = [
     'miyanBeresht',
     'miyanMadi',
     'miyanGroup',
-    'inventory',
 ]
 
 MIDDLEWARE = [

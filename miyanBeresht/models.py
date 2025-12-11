@@ -1,5 +1,7 @@
+from django.conf import settings
 from django.db import models
 from core.models import BaseMenu, MenuItem
+
 
 class BereshtMenu(BaseMenu):
     """Main menu model for Beresht"""
@@ -56,3 +58,45 @@ class BereshtMenuSection(models.Model):
     
     def __str__(self):
         return f"{self.title_en}"
+
+
+class BereshtInventoryItem(models.Model):
+    """Inventory item for Beresht branch"""
+    name = models.CharField(max_length=128)
+    unit = models.CharField(max_length=32, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'beresht_inventory_item'
+        verbose_name = "Beresht Inventory Item"
+        verbose_name_plural = "Beresht Inventory Items"
+
+    def __str__(self):
+        return self.name
+
+
+class BereshtInventoryRecord(models.Model):
+    """Inventory record for Beresht branch"""
+    item = models.ForeignKey(
+        BereshtInventoryItem,
+        on_delete=models.CASCADE,
+        related_name='records'
+    )
+    quantity = models.IntegerField()
+    note = models.TextField(blank=True)
+    recorded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True
+    )
+    recorded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'beresht_inventory_record'
+        verbose_name = "Beresht Inventory Record"
+        verbose_name_plural = "Beresht Inventory Records"
+        ordering = ['-recorded_at']
+
+    def __str__(self):
+        return f"{self.recorded_at.date()} {self.item.name} x{self.quantity}"

@@ -1,5 +1,7 @@
+from django.conf import settings
 from django.db import models
 from core.models import BaseMenu, MenuItem
+
 
 class MadiMenu(BaseMenu):
     """Main menu model for Madi"""
@@ -63,3 +65,45 @@ class MadiMenuItem(MenuItem):
         verbose_name = "Madi Menu Item"
         verbose_name_plural = "Madi Menu Items"
         ordering = ['display_order', 'created_at']
+
+
+class MadiInventoryItem(models.Model):
+    """Inventory item for Madi branch"""
+    name = models.CharField(max_length=128)
+    unit = models.CharField(max_length=32, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'madi_inventory_item'
+        verbose_name = "Madi Inventory Item"
+        verbose_name_plural = "Madi Inventory Items"
+
+    def __str__(self):
+        return self.name
+
+
+class MadiInventoryRecord(models.Model):
+    """Inventory record for Madi branch"""
+    item = models.ForeignKey(
+        MadiInventoryItem,
+        on_delete=models.CASCADE,
+        related_name='records'
+    )
+    quantity = models.IntegerField()
+    note = models.TextField(blank=True)
+    recorded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True
+    )
+    recorded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'madi_inventory_record'
+        verbose_name = "Madi Inventory Record"
+        verbose_name_plural = "Madi Inventory Records"
+        ordering = ['-recorded_at']
+
+    def __str__(self):
+        return f"{self.recorded_at.date()} {self.item.name} x{self.quantity}"

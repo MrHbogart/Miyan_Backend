@@ -1,8 +1,17 @@
+from rest_framework import viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from core.viewsets import BaseMenuItemViewSet, BaseMenuViewSet
-from .models import MadiMenu, MadiMenuItem
-from .serializers import MadiMenuSerializer, MadiMenuItemSerializer
+from .models import (
+    MadiMenu, MadiMenuItem,
+    MadiInventoryItem, MadiInventoryRecord
+)
+from .serializers import (
+    MadiMenuSerializer, MadiMenuItemSerializer,
+    MadiInventoryItemSerializer, MadiInventoryRecordSerializer
+)
 
 
 class MadiMenuViewSet(BaseMenuViewSet):
@@ -25,8 +34,21 @@ class MadiMenuItemViewSet(BaseMenuItemViewSet):
 
     queryset = MadiMenuItem.objects.all()
     serializer_class = MadiMenuItemSerializer
-    
-    @action(detail=False, methods=['get'])
-    def chefs_specials(self, request):
-        """Get chef's special items (public endpoint)"""
-        return self._special_response(is_chefs_special=True)
+
+
+class MadiInventoryItemViewSet(ReadOnlyModelViewSet):
+    """API endpoint for Madi inventory items."""
+    queryset = MadiInventoryItem.objects.all()
+    serializer_class = MadiInventoryItemSerializer
+    permission_classes = [AllowAny]
+
+
+class MadiInventoryRecordViewSet(viewsets.ModelViewSet):
+    """API endpoint for Madi inventory records."""
+    queryset = MadiInventoryRecord.objects.all()
+    serializer_class = MadiInventoryRecordSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(recorded_by=self.request.user)
+

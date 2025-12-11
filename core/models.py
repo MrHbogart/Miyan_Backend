@@ -1,5 +1,29 @@
+from django.conf import settings
 from django.core.validators import FileExtensionValidator
 from django.db import models
+import secrets
+
+
+def generate_bot_token():
+    """Generate a unique bot token for staff profiles"""
+    return secrets.token_hex(16)
+
+
+class StaffProfile(models.Model):
+    """Developer/IT professional staff profile with bot token for telegram bot access"""
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    bot_token = models.CharField(max_length=64, unique=True, default=generate_bot_token)
+    telegram_id = models.CharField(max_length=64, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Staff Profile"
+        verbose_name_plural = "Staff Profiles"
+
+    def __str__(self):
+        return f"StaffProfile({self.user.username})"
+
 
 class BaseMenu(models.Model):
     """Base model for menus"""

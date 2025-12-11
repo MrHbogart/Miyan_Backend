@@ -1,5 +1,8 @@
 from django.contrib import admin
-from .models import BereshtMenu, BereshtMenuSection, BereshtMenuItem
+from .models import (
+    BereshtMenu, BereshtMenuSection, BereshtMenuItem,
+    BereshtInventoryItem, BereshtInventoryRecord
+)
 
 
 @admin.register(BereshtMenuItem)
@@ -28,6 +31,20 @@ class BereshtMenuItemInline(admin.TabularInline):
     model = BereshtMenuItem
     extra = 1
     fields = ['name_en', 'name_fa', 'price_fa', 'image', 'video', 'display_order']
+
+
+@admin.register(BereshtInventoryItem)
+class BereshtInventoryItemAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'unit')
+    search_fields = ('name',)
+
+
+@admin.register(BereshtInventoryRecord)
+class BereshtInventoryRecordAdmin(admin.ModelAdmin):
+    list_display = ('id', 'recorded_at', 'item', 'quantity', 'recorded_by')
+    list_filter = ('item',)
+    readonly_fields = ('recorded_at',)
+
 
 
 @admin.register(BereshtMenuSection)
