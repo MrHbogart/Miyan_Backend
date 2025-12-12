@@ -11,7 +11,7 @@ def generate_bot_token():
 
 class StaffProfile(models.Model):
     """Developer/IT professional staff profile with bot token for telegram bot access"""
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='core_staffprofile')
     bot_token = models.CharField(max_length=64, unique=True, default=generate_bot_token)
     telegram_id = models.CharField(max_length=64, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)

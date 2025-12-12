@@ -28,7 +28,7 @@ class Item(models.Model):
 
 
 class StaffProfile(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='inventory_staffprofile')
     bot_token = models.CharField(max_length=64, unique=True, default=generate_bot_token)
     telegram_id = models.CharField(max_length=64, blank=True, null=True)
 
