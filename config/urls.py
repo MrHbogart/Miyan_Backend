@@ -10,4 +10,15 @@ urlpatterns = [
     path('api/beresht/', include('miyanBeresht.urls')),
     path('api/madi/', include('miyanMadi.urls')),
     path('api/group/', include('miyanGroup.urls')),
+]
+
+
+# Serve media files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Fallback to serve static files via Django (use nginx in production)
+urlpatterns += [
+    re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+]
 
