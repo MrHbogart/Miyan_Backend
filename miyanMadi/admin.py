@@ -60,15 +60,4 @@ class MadiInventoryRecordAdmin(admin.ModelAdmin):
     list_filter = ('item',)
     readonly_fields = ('recorded_at',)
 
-@admin.register(MadiInventoryItem)
-class MadiInventoryItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'unit')
-    search_fields = ('name',)
-
-
-@admin.register(MadiInventoryRecord)
-class MadiInventoryRecordAdmin(admin.ModelAdmin):
-    list_display = ('id', 'recorded_at', 'item', 'quantity', 'recorded_by')
-    list_filter = ('item',)
-    readonly_fields = ('recorded_at',)
 
