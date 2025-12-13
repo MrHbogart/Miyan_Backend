@@ -40,13 +40,7 @@ services:
       - backend_static:/app/staticfiles
       - backend_media:/app/media
     healthcheck:
-      test:
-        [
-          "CMD",
-          "python",
-          "-c",
-          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/core/health/', timeout=5)",
-        ]
+      test: ["CMD-SHELL", "curl -fsS -H 'X-Forwarded-Proto: https' http://127.0.0.1:8000/api/core/health/ || exit 1"]
       interval: 20s
       timeout: 5s
       retries: 5
