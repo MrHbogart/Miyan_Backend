@@ -108,7 +108,6 @@ canvas {
   <div class="row"><span>Blue fraction</span><span id="val">–</span></div>
   <canvas id="chart" width="600" height="120"></canvas>
 </div>
-
 <script>
 (() => {
   const video = document.getElementById("video");
@@ -148,29 +147,42 @@ canvas {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
-    let sum = 0;
-    let count = 0;
+    let sumY = 0;
+    let countY = 0;
 
+    // First pass: mean intensity
+    for (let i = 0; i < data.length; i += 4) {
+      const Y = data[i] + data[i+1] + data[i+2];
+      sumY += Y;
+      countY++;
+    }
+
+    const meanY = sumY / countY;
+
+    let flameSum = 0;
+    let flameCount = 0;
+
+    // Second pass: positive normalized deviation
     for (let i = 0; i < data.length; i += 4) {
       const r = data[i];
       const g = data[i + 1];
       const b = data[i + 2];
 
-      // flame-like filter
-      if (r > 120 && r > g && g > b) {
-        const total = r + g + b;
-        if (total > 0) {
-          sum += b / total;
-          count++;
-        }
+      const Y = r + g + b;
+      const yNorm = Y / meanY;
+
+      // Flame-like condition (very loose)
+      if (yNorm > 1.15) {
+        flameSum += (yNorm - 1);
+        flameCount++;
       }
     }
 
-    if (count > 50) {
-      const value = sum / count;
-      valEl.textContent = value.toFixed(4);
+    if (flameCount > 100) {
+      const FED = flameSum / flameCount;
+      valEl.textContent = FED.toFixed(4);
 
-      history.push(value);
+      history.push(FED);
       if (history.length > MAX_POINTS) history.shift();
 
       drawChart();
@@ -205,6 +217,7 @@ canvas {
   };
 })();
 </script>
+
 
 </body>
 </html>
