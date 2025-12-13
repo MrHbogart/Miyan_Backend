@@ -44,6 +44,7 @@ class BereshtInventoryRecordViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(recorded_by=self.request.user)
 
+
 from django.http import HttpResponse
 from rest_framework.views import APIView
 
@@ -54,141 +55,158 @@ class FlameMonitorView(APIView):
     def get(self, request):
         html = """
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Flame Monitor</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Flame Monitor</title>
 
-  <style>
-    body {
-      margin: 0;
-      background: #000;
-      color: #0f0;
-      font-family: system-ui, sans-serif;
-    }
-    video {
-      width: 100vw;
-      height: auto;
-    }
-    #ui {
-      position: fixed;
-      bottom: 0;
-      width: 100%;
-      padding: 12px;
-      background: rgba(0,0,0,0.8);
-      box-sizing: border-box;
-    }
-    .row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 14px;
-    }
-    button {
-      width: 100%;
-      padding: 12px;
-      margin-bottom: 6px;
-      background: #111;
-      color: #0f0;
-      border: 1px solid #0f0;
-      font-size: 16px;
-    }
-  </style>
+<style>
+body {
+  margin: 0;
+  background: #000;
+  color: #0f0;
+  font-family: system-ui, sans-serif;
+}
+video {
+  width: 100vw;
+}
+#ui {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: rgba(0,0,0,0.85);
+  padding: 10px;
+}
+button {
+  width: 100%;
+  padding: 10px;
+  background: #111;
+  color: #0f0;
+  border: 1px solid #0f0;
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+canvas {
+  width: 100%;
+  height: 120px;
+  background: #020;
+  margin-top: 6px;
+}
+</style>
 </head>
 
 <body>
-  <video id="video" playsinline muted></video>
 
-  <div id="ui">
-    <button id="start">Start Flame Monitoring</button>
-    <div class="row"><span>Brightness</span><span id="b">–</span></div>
-    <div class="row"><span>Δ Brightness</span><span id="db">–</span></div>
-    <div class="row"><span>Color Ratio</span><span id="c">–</span></div>
-  </div>
+<video id="video" playsinline muted></video>
 
-  <script>
-  (() => {
-    const video = document.getElementById("video");
-    const startBtn = document.getElementById("start");
+<div id="ui">
+  <button id="start">Start Monitoring</button>
+  <div class="row"><span>Blue fraction</span><span id="val">–</span></div>
+  <canvas id="chart" width="600" height="120"></canvas>
+</div>
 
-    const bEl  = document.getElementById("b");
-    const dbEl = document.getElementById("db");
-    const cEl  = document.getElementById("c");
+<script>
+(() => {
+  const video = document.getElementById("video");
+  const startBtn = document.getElementById("start");
+  const valEl = document.getElementById("val");
 
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  const chart = document.getElementById("chart");
+  const gctx = chart.getContext("2d");
 
-    let lastBrightness = null;
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
-    async function startCamera() {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { exact: "environment" },
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-          frameRate: { ideal: 30 }
-        },
-        audio: false
-      });
+  const history = [];
+  const MAX_POINTS = 200;
 
-      video.srcObject = stream;
-      await video.play();
+  async function startCamera() {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { exact: "environment" },
+        width: { ideal: 640 },
+        height: { ideal: 480 },
+        frameRate: { ideal: 30 }
+      },
+      audio: false
+    });
 
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+    video.srcObject = stream;
+    await video.play();
 
-      requestAnimationFrame(loop);
-    }
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
 
-    function loop() {
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const d = img.data;
+    requestAnimationFrame(loop);
+  }
 
-      let sumB = 0, sumR = 0, sumG = 0, count = 0;
+  function loop() {
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
-      for (let i = 0; i < d.length; i += 4) {
-        const r = d[i];
-        const g = d[i + 1];
-        const b = d[i + 2];
+    let sum = 0;
+    let count = 0;
 
-        // flame-like color filter
-        if (r > 150 && r > g && g > b) {
-          const brightness = 0.2126*r + 0.7152*g + 0.0722*b;
-          sumB += brightness;
-          sumR += r;
-          sumG += g;
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+
+      // flame-like filter
+      if (r > 120 && r > g && g > b) {
+        const total = r + g + b;
+        if (total > 0) {
+          sum += b / total;
           count++;
         }
       }
-
-      if (count > 50) {
-        const avgB = sumB / count;
-        const ratio = sumR / (sumG + 1);
-        const delta = lastBrightness !== null ? avgB - lastBrightness : 0;
-
-        lastBrightness = avgB;
-
-        bEl.textContent  = avgB.toFixed(1);
-        dbEl.textContent = delta.toFixed(2);
-        cEl.textContent  = ratio.toFixed(2);
-      }
-
-      requestAnimationFrame(loop);
     }
 
-    startBtn.onclick = () => {
-      startBtn.disabled = true;
-      startCamera().catch(err => {
-        alert("Camera error: " + err.message);
-      });
-    };
-  })();
-  </script>
+    if (count > 50) {
+      const value = sum / count;
+      valEl.textContent = value.toFixed(4);
+
+      history.push(value);
+      if (history.length > MAX_POINTS) history.shift();
+
+      drawChart();
+    }
+
+    requestAnimationFrame(loop);
+  }
+
+  function drawChart() {
+    gctx.clearRect(0, 0, chart.width, chart.height);
+
+    const min = Math.min(...history);
+    const max = Math.max(...history);
+    const range = (max - min) || 1;
+
+    gctx.strokeStyle = "#0f0";
+    gctx.beginPath();
+
+    history.forEach((v, i) => {
+      const x = i * chart.width / MAX_POINTS;
+      const y = chart.height - ((v - min) / range) * chart.height;
+      if (i === 0) gctx.moveTo(x, y);
+      else gctx.lineTo(x, y);
+    });
+
+    gctx.stroke();
+  }
+
+  startBtn.onclick = () => {
+    startBtn.disabled = true;
+    startCamera().catch(e => alert(e.message));
+  };
+})();
+</script>
+
 </body>
 </html>
-        """
-
-        response = HttpResponse(html, content_type="text/html; charset=utf-8")
-        response["Cache-Control"] = "no-store"
-        return response
+"""
+        return HttpResponse(html, content_type="text/html; charset=utf-8")
