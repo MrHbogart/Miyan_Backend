@@ -46,7 +46,6 @@ class BereshtInventoryRecordViewSet(viewsets.ModelViewSet):
 
 from django.http import HttpResponse
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
 
 
 class FlameMonitorView(APIView):
@@ -107,7 +106,85 @@ class FlameMonitorView(APIView):
     <div class="row"><span>Color Ratio</span><span id="c">–</span></div>
   </div>
 
-  <script src="/static/flame.js"></script>
+  <script>
+  (() => {
+    const video = document.getElementById("video");
+    const startBtn = document.getElementById("start");
+
+    const bEl  = document.getElementById("b");
+    const dbEl = document.getElementById("db");
+    const cEl  = document.getElementById("c");
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+    let lastBrightness = null;
+
+    async function startCamera() {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { exact: "environment" },
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          frameRate: { ideal: 30 }
+        },
+        audio: false
+      });
+
+      video.srcObject = stream;
+      await video.play();
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      requestAnimationFrame(loop);
+    }
+
+    function loop() {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const d = img.data;
+
+      let sumB = 0, sumR = 0, sumG = 0, count = 0;
+
+      for (let i = 0; i < d.length; i += 4) {
+        const r = d[i];
+        const g = d[i + 1];
+        const b = d[i + 2];
+
+        // flame-like color filter
+        if (r > 150 && r > g && g > b) {
+          const brightness = 0.2126*r + 0.7152*g + 0.0722*b;
+          sumB += brightness;
+          sumR += r;
+          sumG += g;
+          count++;
+        }
+      }
+
+      if (count > 50) {
+        const avgB = sumB / count;
+        const ratio = sumR / (sumG + 1);
+        const delta = lastBrightness !== null ? avgB - lastBrightness : 0;
+
+        lastBrightness = avgB;
+
+        bEl.textContent  = avgB.toFixed(1);
+        dbEl.textContent = delta.toFixed(2);
+        cEl.textContent  = ratio.toFixed(2);
+      }
+
+      requestAnimationFrame(loop);
+    }
+
+    startBtn.onclick = () => {
+      startBtn.disabled = true;
+      startCamera().catch(err => {
+        alert("Camera error: " + err.message);
+      });
+    };
+  })();
+  </script>
 </body>
 </html>
         """
