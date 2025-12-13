@@ -1,14 +1,8 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from . import views
+"""
+Deprecated central inventory URLs.
 
-router = DefaultRouter()
-router.register(r'records', views.InventoryRecordViewSet, basename='inventoryrecord')
-router.register(r'branches', views.BranchViewSet, basename='branch')
-router.register(r'items', views.ItemViewSet, basename='item')
+Inventory endpoints are now served by branch apps (`miyanBeresht`,
+`miyanMadi`). This file intentionally contains no URL registrations.
+"""
 
-urlpatterns = [
-    path('staff/link/', views.StaffLinkAPIView.as_view(), name='staff-link'),
-    path('get-token/', views.TokenByTelegramAPIView.as_view(), name='get-token'),
-    path('', include(router.urls)),
-]
+__all__ = []

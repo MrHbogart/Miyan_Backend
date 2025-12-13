@@ -75,7 +75,6 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'corsheaders',
     'core',
-    'inventory',
     'miyanBeresht',
     'miyanMadi',
     'miyanGroup',

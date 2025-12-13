@@ -54,7 +54,8 @@ def link(update: Update, context: CallbackContext):
     telegram_id = str(update.effective_user.id)
     payload = {'bot_token': bot_token, 'telegram_id': telegram_id}
     try:
-        r = requests.post(f'{API_URL}/api/inventory/staff/link/', json=payload, timeout=10)
+        # staff endpoints are now handled by miyanGroup
+        r = requests.post(f'{API_URL}/api/group/staff/link/', json=payload, timeout=10)
     except Exception as e:
         update.message.reply_text(f'Error connecting to server: {e}')
         return
@@ -69,9 +70,7 @@ def link(update: Update, context: CallbackContext):
     # Request token using secure endpoint and shared secret
     headers = {'X-BOT-SECRET': SHARED_SECRET} if SHARED_SECRET else {}
     try:
-        r2 = requests.post(
-            f'{API_URL}/api/inventory/get-token/', json={'telegram_id': telegram_id}, headers=headers, timeout=10
-        )
+        r2 = requests.post(f'{API_URL}/api/group/staff/get-token/', json={'telegram_id': telegram_id}, headers=headers, timeout=10)
     except Exception as e:
         update.message.reply_text(f'Linked as {username}, but failed to fetch token: {e}')
         return
@@ -103,7 +102,7 @@ def record(update: Update, context: CallbackContext):
         if SHARED_SECRET:
             headers = {'X-BOT-SECRET': SHARED_SECRET}
             try:
-                rtk = requests.post(f'{API_URL}/api/inventory/get-token/', json={'telegram_id': telegram_id}, headers=headers, timeout=10)
+                rtk = requests.post(f'{API_URL}/api/group/staff/get-token/', json={'telegram_id': telegram_id}, headers=headers, timeout=10)
                 if rtk.status_code == 200:
                     tok = rtk.json().get('token')
                     state[telegram_id] = {'token': tok}
@@ -135,9 +134,18 @@ def record(update: Update, context: CallbackContext):
 
     token = state[telegram_id]['token']
     headers = {'Authorization': f'Token {token}'}
-    payload = {'branch': branch_id, 'item': item_id, 'quantity': qty, 'note': note}
+    # branch-specific endpoints expect item/quantity/note (no generic branch field)
+    payload = {'item': item_id, 'quantity': qty, 'note': note}
     try:
-        r = requests.post(f'{API_URL}/api/inventory/records/', json=payload, headers=headers, timeout=10)
+        # Use branch_id to choose endpoint (support '1'/'2' or names)
+        choice = branch_id.lower() if isinstance(branch_id, str) else str(branch_id)
+        if 'beresht' in choice or choice == '1':
+            endpoint = f'{API_URL}/api/beresht/inventory/records/'
+        elif 'madi' in choice or choice == '2':
+            endpoint = f'{API_URL}/api/madi/inventory/records/'
+        else:
+            endpoint = f'{API_URL}/api/beresht/inventory/records/'
+        r = requests.post(endpoint, json=payload, headers=headers, timeout=10)
     except Exception as e:
         update.message.reply_text(f'Error connecting to server: {e}')
         return
@@ -167,19 +175,22 @@ def main():
     # list branches and items
     def branches_cmd(update: Update, context: CallbackContext):
         try:
-            r = requests.get(f'{API_URL}/api/inventory/branches/', timeout=10)
-            if r.status_code == 200:
-                items = r.json()
-                lines = [f"{b['id']}: {b['name']}" for b in items]
-                update.message.reply_text('Branches:\n' + '\n'.join(lines[:50]))
-            else:
-                update.message.reply_text('Failed to fetch branches')
+            # Inventory is branch-specific. Provide static branch list for the bot UI.
+            lines = ["1: Beresht", "2: Madi"]
+            update.message.reply_text('Branches:\n' + '\n'.join(lines))
         except Exception as e:
             update.message.reply_text(f'Error: {e}')
 
     def items_cmd(update: Update, context: CallbackContext):
         try:
-            r = requests.get(f'{API_URL}/api/inventory/items/', timeout=10)
+            args = context.args
+            # default to beresht items; allow optional branch arg
+            branch = args[0] if args else 'beresht'
+            if 'madi' in branch.lower() or branch == '2':
+                r = requests.get(f'{API_URL}/api/madi/inventory/items/', timeout=10)
+            else:
+                r = requests.get(f'{API_URL}/api/beresht/inventory/items/', timeout=10)
+
             if r.status_code == 200:
                 items = r.json()
                 lines = [f"{it['id']}: {it['name']} ({it.get('unit','')})" for it in items]
