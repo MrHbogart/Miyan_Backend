@@ -60,6 +60,7 @@ ALLOWED_HOSTS = get_list_from_env(
 _local_hosts = {'localhost', '127.0.0.1'}
 ALLOWED_HOSTS = list(dict.fromkeys(list(ALLOWED_HOSTS) + list(_local_hosts)))
 
+
 LOG_LEVEL = os.getenv('DJANGO_LOG_LEVEL', 'DEBUG')
 
 # Application definition ----------------------------------------------------
@@ -162,6 +163,13 @@ else:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+
+# When running inside Docker allow the common service hostnames so internal
+# requests from other containers (for example the telegram-bot calling
+# http://backend:8000) are accepted by Django's host header check.
+if IN_DOCKER:
+    _docker_hosts = ['backend', 'frontend', 'telegram-bot', 'db']
+    ALLOWED_HOSTS = list(dict.fromkeys(ALLOWED_HOSTS + _docker_hosts))
 
 # Password validation -------------------------------------------------------
 AUTH_PASSWORD_VALIDATORS = [
