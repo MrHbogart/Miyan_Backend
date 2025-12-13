@@ -8,11 +8,12 @@ from telegram import Update
 from telegram.ext import Updater, CommandHandler, CallbackContext
 
 
-API_URL = os.getenv('API_URL', 'http://web:8000').rstrip('/')
+API_URL = os.getenv('API_URL', 'http://backend:8000').rstrip('/')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 SHARED_SECRET = os.getenv('TELEGRAM_SHARED_SECRET') or os.getenv('BOT_SHARED_SECRET')
 BOT_STATE_PATH = os.getenv('BOT_STATE_PATH', '/data/state.json')
 STATE_FILE = Path(BOT_STATE_PATH)
+DEFAULT_HEADERS = {'X-Forwarded-Proto': 'https'}
 
 
 def load_state():
@@ -38,16 +39,18 @@ state = load_state()
 
 def start(update: Update, context: CallbackContext):
     update.message.reply_text(
-        "Hello — this bot lets staff link their account and submit nightly inventory.\n"
-        "Use /link <your-bot-token> to link your Telegram account, then /record to submit a record.\n"
-        "Example: /record 1 2 15 Optional note"
+        "Salam!\n"
+        "In bot baraye link kardan account va ersal inventory hast.\n"
+        "Baraye link az: /link <bot_token> estefade konid.\n"
+        "Baraye ersal record az: /record <branch> <item> <tedad> [note] estefade konid.\n"
+        "Mesal: /record 1 2 15 note"
     )
 
 
 def link(update: Update, context: CallbackContext):
     args = context.args
     if not args:
-        update.message.reply_text('Usage: /link <bot_token>')
+        update.message.reply_text('Dastur: /link <bot_token>')
         return
 
     bot_token = args[0].strip()
@@ -55,9 +58,9 @@ def link(update: Update, context: CallbackContext):
     payload = {'bot_token': bot_token, 'telegram_id': telegram_id}
     try:
         # staff endpoints are now handled by miyanGroup
-        r = requests.post(f'{API_URL}/api/group/staff/link/', json=payload, timeout=10)
+        r = requests.post(f'{API_URL}/api/group/staff/link/', json=payload, headers=DEFAULT_HEADERS, timeout=10)
     except Exception as e:
-        update.message.reply_text(f'Error connecting to server: {e}')
+        update.message.reply_text(f'Khosh nemishe be server vasl shod: {e}')
         return
 
     if r.status_code != 200:
@@ -68,11 +71,13 @@ def link(update: Update, context: CallbackContext):
     username = data.get('username')
 
     # Request token using secure endpoint and shared secret
-    headers = {'X-BOT-SECRET': SHARED_SECRET} if SHARED_SECRET else {}
+    headers = DEFAULT_HEADERS.copy()
+    if SHARED_SECRET:
+        headers['X-BOT-SECRET'] = SHARED_SECRET
     try:
         r2 = requests.post(f'{API_URL}/api/group/staff/get-token/', json={'telegram_id': telegram_id}, headers=headers, timeout=10)
     except Exception as e:
-        update.message.reply_text(f'Linked as {username}, but failed to fetch token: {e}')
+        update.message.reply_text(f'Link shodid {username}, amma token gereftan movafagh nashod: {e}')
         return
 
     if r2.status_code == 200:
@@ -80,7 +85,7 @@ def link(update: Update, context: CallbackContext):
         if token:
             state[telegram_id] = {'token': token, 'username': username}
             save_state(state)
-            update.message.reply_text(f'Linked as {username}. You can now use /record to submit inventory.')
+            update.message.reply_text(f'{username} link shodi. Alan mituni az /record estefade koni.')
             return
 
     # Fallback: if server returned token on initial link, keep it
@@ -88,10 +93,10 @@ def link(update: Update, context: CallbackContext):
     if token:
         state[telegram_id] = {'token': token, 'username': username}
         save_state(state)
-        update.message.reply_text(f'Linked as {username}. You can now use /record to submit inventory.')
+        update.message.reply_text(f'{username} link shodi. Alan mituni az /record estefade koni.')
         return
 
-    update.message.reply_text('Linked but no token available.')
+    update.message.reply_text('Link shod vali token peyda nashod. Lotfan ba admin tamas begirid.')
 
 
 def record(update: Update, context: CallbackContext):
@@ -100,7 +105,8 @@ def record(update: Update, context: CallbackContext):
     if telegram_id not in state:
         # try to fetch token dynamically if shared secret is configured
         if SHARED_SECRET:
-            headers = {'X-BOT-SECRET': SHARED_SECRET}
+            headers = DEFAULT_HEADERS.copy()
+            headers['X-BOT-SECRET'] = SHARED_SECRET
             try:
                 rtk = requests.post(f'{API_URL}/api/group/staff/get-token/', json={'telegram_id': telegram_id}, headers=headers, timeout=10)
                 if rtk.status_code == 200:
@@ -108,17 +114,17 @@ def record(update: Update, context: CallbackContext):
                     state[telegram_id] = {'token': tok}
                     save_state(state)
                 else:
-                    update.message.reply_text('You are not linked. Use /link <bot_token> first.')
+                    update.message.reply_text('Shoma link nistid. Lotfan aval /link <bot_token> konid.')
                     return
             except Exception:
-                update.message.reply_text('You are not linked. Use /link <bot_token> first.')
+                update.message.reply_text('Shoma link nistid. Lotfan aval /link <bot_token> konid.')
                 return
         else:
-            update.message.reply_text('You are not linked. Use /link <bot_token> first.')
+            update.message.reply_text('Shoma link nistid. Lotfan aval /link <bot_token> konid.')
             return
 
     if len(args) < 3:
-        update.message.reply_text('Usage: /record <branch_id> <item_id> <quantity> [note]')
+        update.message.reply_text('Dastur dorost nist. /record <branch> <item> <tedad> [note]')
         return
 
     branch_id = args[0]
@@ -129,7 +135,7 @@ def record(update: Update, context: CallbackContext):
     try:
         qty = int(quantity)
     except ValueError:
-        update.message.reply_text('Quantity must be an integer.')
+        update.message.reply_text('Tedad bayad adad (integer) bashe.')
         return
 
     token = state[telegram_id]['token']
@@ -145,19 +151,21 @@ def record(update: Update, context: CallbackContext):
             endpoint = f'{API_URL}/api/madi/inventory/records/'
         else:
             endpoint = f'{API_URL}/api/beresht/inventory/records/'
-        r = requests.post(endpoint, json=payload, headers=headers, timeout=10)
+        # include forwarded proto so Django won't redirect to HTTPS
+        req_headers = {**DEFAULT_HEADERS, **headers}
+        r = requests.post(endpoint, json=payload, headers=req_headers, timeout=10)
     except Exception as e:
-        update.message.reply_text(f'Error connecting to server: {e}')
+        update.message.reply_text(f'Khosh nemishe be server vasl shod: {e}')
         return
 
     if r.status_code in (200, 201):
-        update.message.reply_text('Record submitted successfully.')
+        update.message.reply_text('Record be movafaghiat ersal shod.')
     else:
         try:
             text = r.json()
         except Exception:
             text = r.text
-        update.message.reply_text(f'Failed to submit: {text}')
+        update.message.reply_text(f'Ersal nakard: {text}')
 
 
 def main():
@@ -177,9 +185,9 @@ def main():
         try:
             # Inventory is branch-specific. Provide static branch list for the bot UI.
             lines = ["1: Beresht", "2: Madi"]
-            update.message.reply_text('Branches:\n' + '\n'.join(lines))
+            update.message.reply_text('Shobeh-ha:\n' + '\n'.join(lines))
         except Exception as e:
-            update.message.reply_text(f'Error: {e}')
+            update.message.reply_text(f'Khataye dakheli: {e}')
 
     def items_cmd(update: Update, context: CallbackContext):
         try:
@@ -187,18 +195,18 @@ def main():
             # default to beresht items; allow optional branch arg
             branch = args[0] if args else 'beresht'
             if 'madi' in branch.lower() or branch == '2':
-                r = requests.get(f'{API_URL}/api/madi/inventory/items/', timeout=10)
+                r = requests.get(f'{API_URL}/api/madi/inventory/items/', headers=DEFAULT_HEADERS, timeout=10)
             else:
-                r = requests.get(f'{API_URL}/api/beresht/inventory/items/', timeout=10)
+                r = requests.get(f'{API_URL}/api/beresht/inventory/items/', headers=DEFAULT_HEADERS, timeout=10)
 
             if r.status_code == 200:
                 items = r.json()
                 lines = [f"{it['id']}: {it['name']} ({it.get('unit','')})" for it in items]
                 update.message.reply_text('Items:\n' + '\n'.join(lines[:100]))
             else:
-                update.message.reply_text('Failed to fetch items')
+                update.message.reply_text('Khataya dar gereftan list items')
         except Exception as e:
-            update.message.reply_text(f'Error: {e}')
+            update.message.reply_text(f'Khataye ertebati: {e}')
 
     dp.add_handler(CommandHandler('branches', branches_cmd))
     dp.add_handler(CommandHandler('items', items_cmd))
