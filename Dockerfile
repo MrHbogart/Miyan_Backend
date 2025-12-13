@@ -25,7 +25,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gosu && \
+    apt-get install -y --no-install-recommends gosu curl ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder ${VENV_PATH} ${VENV_PATH}
