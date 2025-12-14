@@ -54,34 +54,11 @@ PY
 log "Preparing static and media directories..."
 prepare_directories
 
-log "Preparing migration state..."
-# In development we remove existing migration files so the container always
-# generates fresh migrations at startup. This avoids stale migration conflicts
-# during active development. Do NOT enable this in production — keep migrations
-# in version control there.
-log "Removing any existing migration files so startup creates fresh migrations (development only)"
-run_as_app sh -c "find . -path '*/migrations/*.py' -not -name '__init__.py' -delete || true"
-run_as_app sh -c "find . -path '*/migrations/*.pyc' -delete || true"
-
-# Create new migration files for each app. We do this before waiting for the DB
-# so `makemigrations` can run even if the DB is not yet reachable.
-run_as_app python manage.py makemigrations core miyanBeresht miyanMadi miyanGroup --noinput || \
-    log "makemigrations returned non-zero exit code; continuing because DB may be unavailable yet"
-
 log "Waiting for database..."
 wait_for_db
 
-log "Applying database migrations (app-by-app to avoid dependency order issues)..."
-# Apply migrations app-by-app in an explicit order so dependent models are created
-# in a deterministic sequence. If an app has no migrations generated, migrate will
-# simply do nothing.
-run_as_app python manage.py migrate core --noinput || log "migrate core failed"
-run_as_app python manage.py migrate miyanBeresht --noinput || log "migrate miyanBeresht failed"
-run_as_app python manage.py migrate miyanMadi --noinput || log "migrate miyanMadi failed"
-run_as_app python manage.py migrate miyanGroup --noinput || log "migrate miyanGroup failed"
-# Finally ensure any remaining migrations (including auth, contenttypes, sessions)
-# are applied.
-run_as_app python manage.py migrate --noinput || log "final migrate failed"
+log "Applying database migrations..."
+run_as_app python manage.py migrate --noinput
 
 log "Collecting static assets..."
 run_as_app python manage.py collectstatic --noinput

@@ -1,31 +1,18 @@
-from django.conf import settings
 from django.core.validators import FileExtensionValidator
 from django.db import models
-import secrets
 
 
-def generate_bot_token():
-    """Generate a unique bot token for staff profiles"""
-    return secrets.token_hex(16)
+class TimeStampedModel(models.Model):
+    """Shared timestamp fields used across domain models."""
 
-
-class StaffProfile(models.Model):
-    """Developer/IT professional staff profile with bot token for telegram bot access"""
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='core_staffprofile')
-    bot_token = models.CharField(max_length=64, unique=True, default=generate_bot_token)
-    telegram_id = models.CharField(max_length=64, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Staff Profile"
-        verbose_name_plural = "Staff Profiles"
-
-    def __str__(self):
-        return f"StaffProfile({self.user.username})"
+        abstract = True
 
 
-class BaseMenu(models.Model):
+class BaseMenu(TimeStampedModel):
     """Base model for menus"""
     
     title_fa = models.CharField(max_length=255, verbose_name="Title (Persian)")
@@ -50,17 +37,19 @@ class BaseMenu(models.Model):
         verbose_name="Show Images",
         help_text="Toggle whether this menu renders item pictures",
     )
+    menu_type = models.CharField(
+        max_length=32,
+        default='main',
+        help_text="Logical type for routing (e.g., main, today, breakfast)",
+    )
     display_order = models.PositiveIntegerField(default=0, verbose_name="Display Order")
-    
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Created At")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="Updated At")
     
     class Meta:
         abstract = True
         ordering = ['display_order', 'created_at']
 
 
-class MenuItem(models.Model):
+class MenuItem(TimeStampedModel):
     """Base model for individual menu items"""
     
     name_fa = models.CharField(max_length=255, verbose_name="Item Name (Persian)")
@@ -97,9 +86,6 @@ class MenuItem(models.Model):
     )
     
     display_order = models.PositiveIntegerField(default=0, verbose_name="Display Order")
-    
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         abstract = True

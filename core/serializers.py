@@ -9,25 +9,9 @@ from django.conf import settings
 from rest_framework import serializers
 from urllib.parse import urljoin
 
-from . import models
-
 DEFAULT_MENU_IMAGE = '/images/medium/default-menu.jpg'
 DEFAULT_TODAYS_TITLE = {'fa': 'آیتم‌های تازه امروز', 'en': "Today's Fresh"}
 DEFAULT_TODAYS_SECTION_TITLE = {'fa': 'پیشنهاد امروز', 'en': "Today's Special"}
-
-
-class StaffProfileSerializer(serializers.ModelSerializer):
-    """Serializer for Staff Profile with bot token"""
-    class Meta:
-        model = models.StaffProfile
-        fields = ['id', 'user', 'bot_token', 'telegram_id', 'created_at', 'updated_at']
-        read_only_fields = ['bot_token', 'created_at', 'updated_at']
-
-
-class StaffLinkSerializer(serializers.Serializer):
-    """Serializer for linking staff telegram account"""
-    bot_token = serializers.CharField()
-    telegram_id = serializers.CharField()
 
 
 def _format_decimal_string(value: Decimal) -> str:

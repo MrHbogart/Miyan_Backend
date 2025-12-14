@@ -1,48 +1,24 @@
 # miyanBeresht/views.py
 from rest_framework import viewsets
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.viewsets import ReadOnlyModelViewSet
+from rest_framework.permissions import AllowAny
 
 from core.viewsets import BaseMenuItemViewSet, BaseMenuViewSet
-from .models import (
-    BereshtMenu, BereshtMenuItem,
-    BereshtInventoryItem, BereshtInventoryRecord
-)
-from .serializers import (
-    BereshtMenuSerializer, BereshtMenuItemSerializer,
-    BereshtInventoryItemSerializer, BereshtInventoryRecordSerializer
-)
+from .models import BereshtMenu, BereshtMenuItem
+from .serializers import BereshtMenuSerializer, BereshtMenuItemSerializer
 
 
 class BereshtMenuViewSet(BaseMenuViewSet):
     """API endpoint for Beresht menus."""
 
-    queryset = BereshtMenu.objects.all().prefetch_related('sections__items')
+    queryset = BereshtMenu.objects.select_related('branch').filter(branch__code='beresht').prefetch_related('sections__items')
     serializer_class = BereshtMenuSerializer
 
 
 class BereshtMenuItemViewSet(BaseMenuItemViewSet):
     """API endpoint for Beresht menu items."""
 
-    queryset = BereshtMenuItem.objects.all()
+    queryset = BereshtMenuItem.objects.filter(section__menu__branch__code='beresht')
     serializer_class = BereshtMenuItemSerializer
-
-
-class BereshtInventoryItemViewSet(ReadOnlyModelViewSet):
-    """API endpoint for Beresht inventory items."""
-    queryset = BereshtInventoryItem.objects.all()
-    serializer_class = BereshtInventoryItemSerializer
-    permission_classes = [AllowAny]
-
-
-class BereshtInventoryRecordViewSet(viewsets.ModelViewSet):
-    """API endpoint for Beresht inventory records."""
-    queryset = BereshtInventoryRecord.objects.all()
-    serializer_class = BereshtInventoryRecordSerializer
-    permission_classes = [IsAuthenticated]
-
-    def perform_create(self, serializer):
-        serializer.save(recorded_by=self.request.user)
 
 
 from django.http import HttpResponse

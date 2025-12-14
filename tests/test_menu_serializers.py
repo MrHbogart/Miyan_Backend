@@ -4,15 +4,18 @@ from miyanBeresht.models import BereshtMenu, BereshtMenuItem, BereshtMenuSection
 from miyanBeresht.serializers import BereshtMenuSerializer
 from miyanMadi.models import MadiMenu, MadiMenuItem, MadiMenuSection
 from miyanMadi.serializers import MadiMenuSerializer
+from miyanGroup.models import Branch
 
 
 @pytest.mark.django_db
 def test_beresht_menu_serializer_shapes_public_payload():
+    branch = Branch.objects.create(name='Beresht', code='beresht')
     menu = BereshtMenu.objects.create(
         title_fa='منو برشت',
         title_en='Beresht Menu',
         subtitle_fa='زیرعنوان',
         subtitle_en='Subtitle',
+        branch=branch,
     )
     section = BereshtMenuSection.objects.create(
         menu=menu,
@@ -68,10 +71,12 @@ def test_beresht_menu_serializer_shapes_public_payload():
 
 @pytest.mark.django_db
 def test_madi_menu_serializer_handles_breakfast_and_specials():
+    branch = Branch.objects.create(name='Madi', code='madi')
     menu = MadiMenu.objects.create(
         title_fa='منوی مادی',
         title_en='Madi Menu',
         service_hours='7am - 11am',
+        branch=branch,
     )
     section = MadiMenuSection.objects.create(
         menu=menu,

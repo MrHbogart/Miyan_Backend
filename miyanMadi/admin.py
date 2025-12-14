@@ -1,8 +1,5 @@
 from django.contrib import admin
-from .models import (
-    MadiMenu, MadiMenuSection, MadiMenuItem,
-    MadiInventoryItem, MadiInventoryRecord
-)
+from .models import MadiMenu, MadiMenuSection, MadiMenuItem
 
 
 @admin.register(MadiMenuItem)
@@ -46,18 +43,4 @@ class MadiMenuAdmin(admin.ModelAdmin):
     list_filter = ['is_active', 'show_images']
     search_fields = ['title_en', 'title_fa', 'subtitle_en', 'subtitle_fa']
     inlines = []
-
-
-@admin.register(MadiInventoryItem)
-class MadiInventoryItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'unit')
-    search_fields = ('name',)
-
-
-@admin.register(MadiInventoryRecord)
-class MadiInventoryRecordAdmin(admin.ModelAdmin):
-    list_display = ('id', 'recorded_at', 'item', 'quantity', 'recorded_by')
-    list_filter = ('item',)
-    readonly_fields = ('recorded_at',)
-
 
