@@ -31,7 +31,12 @@ RUN apt-get update && \
 COPY --from=builder ${VENV_PATH} ${VENV_PATH}
 ENV PATH="${VENV_PATH}/bin:${PATH}"
 
-COPY . .
+## Copy only the backend app files from the repository root into /app. When the
+## build context is the repository root (we changed that in compose), a plain
+## `COPY . .` would place files under /app including a `Miyan_Backend/` folder,
+## which breaks paths expected by the entrypoint. Copy the backend dir content
+## into /app so files like `docker-entrypoint.sh` live at /app/docker-entrypoint.sh
+COPY Miyan_Backend/ .
 
 RUN set -eux; \
     groupadd --system "${APP_USER}" || true; \
