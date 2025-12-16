@@ -22,6 +22,11 @@ class Command(BaseCommand):
             default=5,
             help='Number of items to create per section (default: 5)'
         )
+        parser.add_argument(
+            '--with-inventory',
+            action='store_true',
+            help='Also seed inventory items for each branch (default: off)',
+        )
 
     def handle(self, *args, **options):
         visuals_dir = options['visuals_dir']
@@ -63,6 +68,7 @@ class Command(BaseCommand):
         # Map brands to their models using explicit imports
         from miyanBeresht.models import BereshtMenu, BereshtMenuSection, BereshtMenuItem
         from miyanMadi.models import MadiMenu, MadiMenuSection, MadiMenuItem
+        from miyanGroup.models import Branch, InventoryItem
 
         brand_configs = [
             {
@@ -70,12 +76,18 @@ class Command(BaseCommand):
                 'menu_model': BereshtMenu,
                 'section_model': BereshtMenuSection,
                 'item_model': BereshtMenuItem,
+                'branch': Branch.objects.get_or_create(
+                    code='beresht', defaults={'name': 'Beresht', 'is_active': True}
+                )[0],
             },
             {
                 'name': 'Madi',
                 'menu_model': MadiMenu,
                 'section_model': MadiMenuSection,
                 'item_model': MadiMenuItem,
+                'branch': Branch.objects.get_or_create(
+                    code='madi', defaults={'name': 'Madi', 'is_active': True}
+                )[0],
             },
         ]
 
@@ -101,13 +113,15 @@ class Command(BaseCommand):
                 for menu_data in menus_to_create:
                     menu, created = menu_model.objects.get_or_create(
                         title_en=menu_data['title_en'],
+                        branch=brand_config['branch'],
                         defaults={
                             'title_fa': menu_data['title_fa'],
                             'subtitle_en': menu_data.get('subtitle_en', ''),
                             'subtitle_fa': menu_data.get('subtitle_fa', ''),
                             'is_active': True,
                             'display_order': 1,
-                        }
+                            'menu_type': 'main' if 'today' not in menu_data['title_en'].lower() else 'today',
+                        },
                     )
 
                     if created:
@@ -176,6 +190,21 @@ class Command(BaseCommand):
 
                             self.stdout.write(f"    ✓ Item {item_name_idx}: {item.name_en}")
                             total_items += 1
+
+                if options.get('with_inventory'):
+                    inventory_defaults = [
+                        {'name': 'Espresso Beans', 'unit': 'kg'},
+                        {'name': 'Milk', 'unit': 'L'},
+                        {'name': 'Cups', 'unit': 'pcs'},
+                    ]
+                    for inv in inventory_defaults:
+                        inv_obj, created = InventoryItem.objects.get_or_create(
+                            branch=brand_config['branch'],
+                            name=inv['name'],
+                            defaults={'unit': inv.get('unit', ''), 'is_active': True},
+                        )
+                        if created:
+                            self.stdout.write(f"  ✓ Inventory item: {inv_obj.name}")
 
         self.stdout.write(self.style.SUCCESS(f"\n{'='*60}"))
         self.stdout.write(self.style.SUCCESS(f"✓ Seeding finished. Created {total_items} items."))
