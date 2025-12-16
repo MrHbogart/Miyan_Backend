@@ -167,11 +167,11 @@ class InventoryTransactionSerializer(serializers.ModelSerializer):
 
 class TelegramLinkSerializer(serializers.Serializer):
     telegram_token = serializers.CharField()
-    telegram_id = serializers.CharField()
+    telegram_id = serializers.CharField(required=False, allow_blank=True)
 
 
 class TelegramTokenExchangeSerializer(serializers.Serializer):
-    telegram_id = serializers.CharField()
+    telegram_token = serializers.CharField()
 
     def create(self, validated_data):
         staff = validated_data['staff']

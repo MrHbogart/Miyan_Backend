@@ -201,15 +201,16 @@ class TelegramLinkView(APIView):
         serializer = serializers.TelegramLinkSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         token_value = serializer.validated_data['telegram_token']
-        telegram_id = serializer.validated_data['telegram_id']
+        telegram_id = serializer.validated_data.get('telegram_id')
 
         try:
             staff = models.Staff.objects.get(telegram_token=token_value)
         except models.Staff.DoesNotExist:
             return Response({'detail': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
 
-        staff.telegram_id = str(telegram_id)
-        staff.save(update_fields=['telegram_id'])
+        if telegram_id:
+            staff.telegram_id = str(telegram_id)
+            staff.save(update_fields=['telegram_id'])
         auth_token, _ = Token.objects.get_or_create(user=staff.user)
         payload = serializers.StaffSerializer(staff).data
         payload['token'] = auth_token.key
@@ -226,11 +227,11 @@ class TelegramTokenExchangeView(APIView):
 
         serializer = serializers.TelegramTokenExchangeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        telegram_id = serializer.validated_data['telegram_id']
+        token_value = serializer.validated_data['telegram_token']
         try:
-            staff = models.Staff.objects.get(telegram_id=telegram_id)
+            staff = models.Staff.objects.get(telegram_token=token_value)
         except models.Staff.DoesNotExist:
-            return Response({'detail': 'Not linked'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': 'Invalid token'}, status=status.HTTP_404_NOT_FOUND)
 
         auth_token, _ = Token.objects.get_or_create(user=staff.user)
         data = {
