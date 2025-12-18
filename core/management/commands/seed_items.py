@@ -33,9 +33,9 @@ class Command(BaseCommand):
         self.stdout.write(f"Visuals dir: {visuals_dir}")
         self.stdout.write("Items per section flag is ignored; using curated menu data.")
 
-        # Guard against stale schema (branch_id still present)
-        self._assert_column_removed('beresht_menu', 'branch_id')
-        self._assert_column_removed('madi_menu', 'branch_id')
+        # Guard against stale schema (branch_id still present) and drop it if needed
+        self._ensure_column_dropped('beresht_menu', 'branch_id')
+        self._ensure_column_dropped('madi_menu', 'branch_id')
 
         # Collect image files from visuals/items/ and root visuals/ (optional)
         images_dir = os.path.join(visuals_dir, 'items')
@@ -373,16 +373,28 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("✓ Seeding finished with curated menus."))
 
     # ------------------------------------------------------------------ #
-    def _assert_column_removed(self, table_name: str, column: str):
-        """Fail fast with a clear message if legacy branch_id still exists."""
+    def _ensure_column_dropped(self, table_name: str, column: str):
+        """Drop legacy column if it exists so seeding matches the current models."""
         try:
             with connection.cursor() as cursor:
                 cols = connection.introspection.get_table_description(cursor, table_name)
-            if any(col.name == column for col in cols):
-                raise CommandError(
-                    f"`{table_name}` still has `{column}`. Apply migrations to drop the branch field "
-                    "before running seed_items (run `python manage.py migrate`)."
-                )
+                has_column = any(col.name == column for col in cols)
+                if not has_column:
+                    return
+
+                self.stdout.write(self.style.WARNING(f"Legacy column `{column}` found on `{table_name}`; dropping it."))
+                cursor.execute(f'ALTER TABLE "{table_name}" DROP COLUMN IF EXISTS "{column}";')
+
+                # Re-check to confirm removal
+                cols_after = connection.introspection.get_table_description(cursor, table_name)
+                if any(col.name == column for col in cols_after):
+                    raise CommandError(
+                        f"Failed to drop `{column}` from `{table_name}`. "
+                        "Please run migrations (e.g. the 0002_remove_*_branch migration) and retry."
+                    )
         except Exception:
-            # If table is missing (fresh DB), let migration create it; seed will rerun after migrate
-            pass
+            # If table is missing (fresh DB) or drop failed unexpectedly, surface a clear error.
+            raise CommandError(
+                f"Could not verify or drop `{column}` on `{table_name}`. "
+                "Ensure migrations are applied and retry seed_items."
+            )
