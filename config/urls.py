@@ -10,6 +10,7 @@ urlpatterns = [
     path('api/beresht/', include('miyanBeresht.urls')),
     path('api/madi/', include('miyanMadi.urls')),
     path('api/group/', include('miyanGroup.urls')),
+    path('api/inventory/', include('inventory.urls')),
 ]
 
 
@@ -21,4 +22,3 @@ if settings.DEBUG:
 urlpatterns += [
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
 ]
-

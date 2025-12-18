@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'corsheaders',
     'core',
+    'inventory',
     'miyanBeresht',
     'miyanMadi',
     'miyanGroup',
@@ -168,7 +169,7 @@ else:
 # requests from other containers (for example the telegram-bot calling
 # http://backend:8000) are accepted by Django's host header check.
 if IN_DOCKER:
-    _docker_hosts = ['backend', 'frontend', 'telegram-bot', 'db']
+    _docker_hosts = ['backend', 'frontend', 'telegrambot', 'telegram-bot', 'db']
     ALLOWED_HOSTS = list(dict.fromkeys(ALLOWED_HOSTS + _docker_hosts))
 
 # Password validation -------------------------------------------------------

@@ -101,6 +101,12 @@ class StartShiftSerializer(serializers.Serializer):
     def create(self, validated_data):
         staff = self.context['staff']
         branch = validated_data['branch']
+        if not models.StaffBranchAssignment.objects.filter(
+            staff=staff,
+            branch=branch,
+            is_active=True,
+        ).exists():
+            raise serializers.ValidationError('Staff is not assigned to this branch.')
         # end any previous shift
         models.StaffShift.objects.filter(staff=staff, ended_at__isnull=True).update(ended_at=timezone.now())
         return models.StaffShift.objects.create(staff=staff, branch=branch)
