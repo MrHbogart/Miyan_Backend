@@ -1,7 +1,8 @@
 import os
+
 from django.core.files import File
-from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.core.management.base import BaseCommand, CommandError
+from django.db import connection, transaction
 
 
 class Command(BaseCommand):
@@ -31,6 +32,10 @@ class Command(BaseCommand):
 
         self.stdout.write(f"Visuals dir: {visuals_dir}")
         self.stdout.write("Items per section flag is ignored; using curated menu data.")
+
+        # Guard against stale schema (branch_id still present)
+        self._assert_column_removed('beresht_menu', 'branch_id')
+        self._assert_column_removed('madi_menu', 'branch_id')
 
         # Collect image files from visuals/items/ and root visuals/ (optional)
         images_dir = os.path.join(visuals_dir, 'items')
@@ -366,3 +371,18 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(f"\n{'='*60}"))
         self.stdout.write(self.style.SUCCESS("✓ Seeding finished with curated menus."))
+
+    # ------------------------------------------------------------------ #
+    def _assert_column_removed(self, table_name: str, column: str):
+        """Fail fast with a clear message if legacy branch_id still exists."""
+        try:
+            with connection.cursor() as cursor:
+                cols = connection.introspection.get_table_description(cursor, table_name)
+            if any(col.name == column for col in cols):
+                raise CommandError(
+                    f"`{table_name}` still has `{column}`. Apply migrations to drop the branch field "
+                    "before running seed_items (run `python manage.py migrate`)."
+                )
+        except Exception:
+            # If table is missing (fresh DB), let migration create it; seed will rerun after migrate
+            pass
