@@ -2,19 +2,15 @@ import pytest
 from django.urls import reverse
 
 from miyanBeresht.models import BereshtMenu
-from miyanGroup.models import Branch
-
 pytestmark = pytest.mark.django_db
 
 
 def _create_menu(**overrides):
-    branch, _ = Branch.objects.get_or_create(name='Beresht', code='beresht')
     data = {
         'title_fa': 'منو',
         'title_en': 'Menu',
         'subtitle_fa': '',
         'subtitle_en': '',
-        'branch': branch,
     }
     data.update(overrides)
     return BereshtMenu.objects.create(**data)

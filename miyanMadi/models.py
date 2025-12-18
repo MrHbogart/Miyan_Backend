@@ -1,11 +1,9 @@
 from django.db import models
 from core.models import BaseMenu, MenuItem
-from miyanGroup.models import Branch
 
 
 class MadiMenu(BaseMenu):
     """Main menu model for Madi"""
-    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='madi_menus')
     
     service_hours = models.CharField(
         max_length=100,
@@ -66,4 +64,3 @@ class MadiMenuItem(MenuItem):
         verbose_name = "Madi Menu Item"
         verbose_name_plural = "Madi Menu Items"
         ordering = ['display_order', 'created_at']
-

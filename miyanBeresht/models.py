@@ -1,11 +1,9 @@
 from django.db import models
 from core.models import BaseMenu, MenuItem
-from miyanGroup.models import Branch
 
 
 class BereshtMenu(BaseMenu):
     """Main menu model for Beresht"""
-    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='beresht_menus')
     
     class Meta:
         db_table = 'beresht_menu'
@@ -59,4 +57,3 @@ class BereshtMenuSection(models.Model):
     
     def __str__(self):
         return f"{self.title_en}"
-

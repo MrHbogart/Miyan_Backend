@@ -10,14 +10,14 @@ from .serializers import BereshtMenuSerializer, BereshtMenuItemSerializer
 class BereshtMenuViewSet(BaseMenuViewSet):
     """API endpoint for Beresht menus."""
 
-    queryset = BereshtMenu.objects.select_related('branch').filter(branch__code='beresht').prefetch_related('sections__items')
+    queryset = BereshtMenu.objects.prefetch_related('sections__items')
     serializer_class = BereshtMenuSerializer
 
 
 class BereshtMenuItemViewSet(BaseMenuItemViewSet):
     """API endpoint for Beresht menu items."""
 
-    queryset = BereshtMenuItem.objects.filter(section__menu__branch__code='beresht')
+    queryset = BereshtMenuItem.objects.all()
     serializer_class = BereshtMenuItemSerializer
 
 

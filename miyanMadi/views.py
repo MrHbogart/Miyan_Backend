@@ -9,7 +9,7 @@ from .serializers import MadiMenuSerializer, MadiMenuItemSerializer
 class MadiMenuViewSet(BaseMenuViewSet):
     """API endpoint for Madi menus."""
 
-    queryset = MadiMenu.objects.select_related('branch').filter(branch__code='madi').prefetch_related('sections__items')
+    queryset = MadiMenu.objects.prefetch_related('sections__items')
     serializer_class = MadiMenuSerializer
     breakfast_not_found_message = 'No breakfast menu found'
 
@@ -24,5 +24,5 @@ class MadiMenuViewSet(BaseMenuViewSet):
 class MadiMenuItemViewSet(BaseMenuItemViewSet):
     """API endpoint for Madi menu items."""
 
-    queryset = MadiMenuItem.objects.filter(section__menu__branch__code='madi')
+    queryset = MadiMenuItem.objects.all()
     serializer_class = MadiMenuItemSerializer
