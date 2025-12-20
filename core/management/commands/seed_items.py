@@ -102,7 +102,13 @@ class Command(BaseCommand):
                     {'name_fa': 'اسپرسو پرمیوم', 'name_en': 'Espresso (Premium)', 'price_fa': '190'},
                     {'name_fa': 'آمریکانو کامرشیال', 'name_en': 'Americano (Commercial)', 'price_fa': '150'},
                     {'name_fa': 'آمریکانو پرمیوم', 'name_en': 'Americano (Premium)', 'price_fa': '195'},
-                    {'name_fa': 'قهوه روز', 'name_en': 'Coffee of the Day (free refill)', 'price_fa': '125', 'description_fa': 'شارژ رایگان'},
+                    {
+                        'name_fa': 'قهوه روز',
+                        'name_en': 'Coffee of the Day',
+                        'price_fa': '125',
+                        'description_fa': '[شارژ رایگان]',
+                        'description_en': '[free refill]',
+                    },
                 ],
             },
             {
@@ -112,9 +118,21 @@ class Command(BaseCommand):
                     {'name_fa': 'اسپرسو ماکیاتو', 'name_en': 'Espresso Macchiato', 'price_fa': '160'},
                     {'name_fa': 'کورتادو', 'name_en': 'Cortado', 'price_fa': '175'},
                     {'name_fa': 'کاپوچینو', 'name_en': 'Cappuccino', 'price_fa': '185'},
-                    {'name_fa': 'لاته (سرد / گرم)', 'name_en': 'Latte (iced / hot)', 'price_fa': '195'},
-                    {'name_fa': 'موکا (سرد / گرم)', 'name_en': 'Mocha (iced / hot)', 'price_fa': '210'},
-                    {'name_fa': 'لاته تیرامیسو', 'name_en': 'Tiramisu Latte', 'price_fa': '280', 'description_en': 'New'},
+                    {
+                        'name_fa': 'لاته',
+                        'name_en': 'Latte',
+                        'price_fa': '195',
+                        'description_fa': '[سرد / گرم]',
+                        'description_en': '[iced / hot]',
+                    },
+                    {
+                        'name_fa': 'موکا',
+                        'name_en': 'Mocha',
+                        'price_fa': '210',
+                        'description_fa': '[سرد / گرم]',
+                        'description_en': '[iced / hot]',
+                    },
+                    {'name_fa': 'لاته تیرامیسو', 'name_en': 'Tiramisu Latte', 'price_fa': '280'},
                 ],
             },
             {
@@ -133,9 +151,21 @@ class Command(BaseCommand):
                 'title_en': 'Tea & Infusions',
                 'items': [
                     {'name_fa': 'چای سیاه', 'name_en': 'Black Tea', 'price_fa': '110'},
-                    {'name_fa': 'ماچا (سرد / گرم)', 'name_en': 'Matcha (iced / hot)', 'price_fa': '210'},
+                    {
+                        'name_fa': 'ماچا',
+                        'name_en': 'Matcha',
+                        'price_fa': '210',
+                        'description_fa': '[سرد / گرم]',
+                        'description_en': '[iced / hot]',
+                    },
                     {'name_fa': 'چای سیب و به', 'name_en': 'Apple & Quince Tea', 'price_fa': '135'},
-                    {'name_fa': 'چای سبز (بابونه، دارچین، زنجبیل)', 'name_en': 'Green Tea (chamomile, cinnamon, ginger)', 'price_fa': '135'},
+                    {
+                        'name_fa': 'چای سبز',
+                        'name_en': 'Green Tea',
+                        'price_fa': '135',
+                        'description_fa': '[بابونه، دارچین، زنجبیل]',
+                        'description_en': '[chamomile, cinnamon, ginger]',
+                    },
                     {'name_fa': 'دمنوش رز، پنیرک، بابونه، سیب', 'name_en': 'Rose, Mallow, Chamomile, Apple', 'price_fa': '135'},
                     {'name_fa': 'دمنوش دارچین، میخک، زنجبیل', 'name_en': 'Cinnamon, Clove, Ginger', 'price_fa': '135'},
                 ],
@@ -146,9 +176,27 @@ class Command(BaseCommand):
                 'items': [
                     {'name_fa': 'هات چاکلت', 'name_en': 'Hot Chocolate', 'price_fa': '270'},
                     {'name_fa': 'ماسالا', 'name_en': 'Masala', 'price_fa': '210'},
-                    {'name_fa': 'هات پینات (شیر، دارچین، پینات)', 'name_en': 'Hot Peanut (milk, cinnamon, peanut)', 'price_fa': '175'},
-                    {'name_fa': 'اسپیرولینا (سرد / گرم)', 'name_en': 'Spirulina (iced / hot)', 'price_fa': '210'},
-                    {'name_fa': 'بلوندی (شکلات سفید، آلبالو، شیر)', 'name_en': 'Blondie (white chocolate, sour cherry, milk)', 'price_fa': '250'},
+                    {
+                        'name_fa': 'هات پینات',
+                        'name_en': 'Hot Peanut',
+                        'price_fa': '175',
+                        'description_fa': '[شیر، دارچین، پینات]',
+                        'description_en': '[milk, cinnamon, peanut]',
+                    },
+                    {
+                        'name_fa': 'اسپیرولینا',
+                        'name_en': 'Spirulina',
+                        'price_fa': '210',
+                        'description_fa': '[سرد / گرم]',
+                        'description_en': '[iced / hot]',
+                    },
+                    {
+                        'name_fa': 'بلوندی',
+                        'name_en': 'Blondie',
+                        'price_fa': '250',
+                        'description_fa': '[شکلات سفید، آلبالو، شیر]',
+                        'description_en': '[white chocolate, sour cherry, milk]',
+                    },
                 ],
             },
             {
@@ -159,10 +207,22 @@ class Command(BaseCommand):
                     {'name_fa': 'فیزی آیسد تی', 'name_en': 'Fizzy Iced Tea', 'price_fa': '195', 'description_fa': 'طعم‌ها: انار / انگور سیاه / سودا'},
                     {'name_fa': 'میموسا', 'name_en': 'Mimosa', 'price_fa': '195'},
                     {'name_fa': 'ویشنوکا', 'name_en': 'Vishnuka', 'price_fa': '180'},
-                    {'name_fa': 'مرلوت (زنجبیل)', 'name_en': 'Merlot (ginger)', 'price_fa': '195'},
+                    {
+                        'name_fa': 'مرلوت',
+                        'name_en': 'Merlot',
+                        'price_fa': '195',
+                        'description_fa': '[زنجبیل]',
+                        'description_en': '[ginger]',
+                    },
                     {'name_fa': 'لیموناد', 'name_en': 'Lemonade', 'price_fa': '150'},
                     {'name_fa': 'خاکشیر و آلوئه‌ورا', 'name_en': 'Khakshir & Aloe Vera', 'price_fa': '175'},
-                    {'name_fa': 'کلودا (سیب دارچین / هلو انبه)', 'name_en': 'Cloda (apple cinnamon / peach mango)', 'price_fa': '290'},
+                    {
+                        'name_fa': 'کلودا',
+                        'name_en': 'Cloda',
+                        'price_fa': '290',
+                        'description_fa': '[سیب دارچین / هلو انبه]',
+                        'description_en': '[apple cinnamon / peach mango]',
+                    },
                 ],
             },
             {
@@ -194,8 +254,20 @@ class Command(BaseCommand):
                 'title_en': 'Cookies',
                 'items': [
                     {'name_fa': 'کوکی دبل چاکلت', 'name_en': 'Double Chocolate Cookie', 'price_fa': '125'},
-                    {'name_fa': 'کوکی خرما (بدون شکر)', 'name_en': 'Date Cookie (no sugar)', 'price_fa': '125'},
-                    {'name_fa': 'کوکی هویج و گردو (بدون شکر)', 'name_en': 'Carrot Walnut Cookie (no sugar)', 'price_fa': '150'},
+                    {
+                        'name_fa': 'کوکی خرما',
+                        'name_en': 'Date Cookie',
+                        'price_fa': '125',
+                        'description_fa': '[بدون شکر]',
+                        'description_en': '[sugar free]',
+                    },
+                    {
+                        'name_fa': 'کوکی هویج و گردو',
+                        'name_en': 'Carrot Walnut Cookie',
+                        'price_fa': '150',
+                        'description_fa': '[بدون شکر]',
+                        'description_en': '[sugar free]',
+                    },
                 ],
             },
             {
@@ -204,7 +276,13 @@ class Command(BaseCommand):
                 'items': [
                     {'name_fa': 'پروتئین بار', 'name_en': 'Protein Bar', 'price_fa': '250'},
                     {'name_fa': 'سرشیر و عسل', 'name_en': 'Cream & Honey', 'price_fa': '245'},
-                    {'name_fa': 'اوتمیل (سوهان عسلی / میوه)', 'name_en': 'Oatmeal (honey brittle / fruit)', 'price_fa': '240'},
+                    {
+                        'name_fa': 'اوتمیل',
+                        'name_en': 'Oatmeal',
+                        'price_fa': '240',
+                        'description_fa': '[سوهان عسلی / میوه]',
+                        'description_en': '[honey Sohaan / fruit]',
+                    },
                 ],
             },
             {
@@ -214,7 +292,13 @@ class Command(BaseCommand):
                     {'name_fa': 'تست پنیر شوید', 'name_en': 'Dill Cheese Toast', 'price_fa': '150'},
                     {'name_fa': 'تست پنیر زیره و پسته', 'name_en': 'Cumin Pistachio Cheese Toast', 'price_fa': '280'},
                     {'name_fa': 'تست پینات و عسل', 'name_en': 'Peanut Butter & Honey Toast', 'price_fa': '240'},
-                    {'name_fa': 'سیمیت (پنیر، گوجه، ریحان)', 'name_en': 'Simit (cheese, tomato, basil)', 'price_fa': '250'},
+                    {
+                        'name_fa': 'سیمیت',
+                        'name_en': 'Simit',
+                        'price_fa': '250',
+                        'description_fa': '[پنیر، گوجه، ریحان]',
+                        'description_en': '[cheese, tomato, basil]',
+                    },
                     {'name_fa': 'کروسان خامه مربا', 'name_en': 'Cream & Jam Croissant', 'price_fa': '150'},
                 ],
             },
@@ -239,20 +323,20 @@ class Command(BaseCommand):
 
         menus_to_seed = [
             {
-                'title_en': 'Main Menu',
-                'title_fa': 'منوی نوشیدنی',
-                'subtitle_en': '',
-                'subtitle_fa': '',
-                'menu_type': 'main',
-                'sections': main_menu_sections,
-            },
-            {
                 'title_en': "Today's Special",
                 'title_fa': 'پخت روز',
                 'subtitle_en': '',
                 'subtitle_fa': '',
                 'menu_type': 'today',
                 'sections': todays_special_sections,
+            },
+            {
+                'title_en': 'Main Menu',
+                'title_fa': 'منوی نوشیدنی',
+                'subtitle_en': '',
+                'subtitle_fa': '',
+                'menu_type': 'main',
+                'sections': main_menu_sections,
             },
         ]
 
