@@ -33,7 +33,7 @@ class BaseMenu(TimeStampedModel):
     
     is_active = models.BooleanField(default=True, verbose_name="Is Active")
     show_images = models.BooleanField(
-        default=True,
+        default=False,
         verbose_name="Show Images",
         help_text="Toggle whether this menu renders item pictures",
     )

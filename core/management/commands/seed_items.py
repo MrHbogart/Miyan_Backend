@@ -40,32 +40,12 @@ class Command(BaseCommand):
         # Collect image files from visuals/items/ and root visuals/ (optional)
         images_dir = os.path.join(visuals_dir, 'items')
         images = []
-        
-        # Check items subdirectory first
-        if os.path.isdir(images_dir):
-            for fname in os.listdir(images_dir):
-                fpath = os.path.join(images_dir, fname)
-                if os.path.isfile(fpath) and fname.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
-                    images.append(fpath)
-        
-        # Also check root visuals directory for images
-        if os.path.isdir(visuals_dir):
-            for fname in os.listdir(visuals_dir):
-                fpath = os.path.join(visuals_dir, fname)
-                if os.path.isfile(fpath) and fname.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
-                    images.append(fpath)
-        
-        self.stdout.write(self.style.SUCCESS(f"Found {len(images)} total image(s)"))
 
-        # Collect GIF files from visuals/items/
+        # Collect GIF files from visuals/items/ (kept but disabled by design)
         gifs = []
-        if os.path.isdir(images_dir):
-            for fname in os.listdir(images_dir):
-                fpath = os.path.join(images_dir, fname)
-                if os.path.isfile(fpath) and fname.lower().endswith('.gif'):
-                    gifs.append(fpath)
-        
-        self.stdout.write(self.style.SUCCESS(f"Found {len(gifs)} total gif(s)"))
+
+        # Disable auto-attachment to keep seeded menus pictureless by default
+        self.stdout.write(self.style.SUCCESS("Skipping image/GIF attachment for seeded menus (pictureless by default)."))
 
         # Map brands to their models using explicit imports
         from miyanBeresht.models import BereshtMenu, BereshtMenuSection, BereshtMenuItem
@@ -357,6 +337,7 @@ class Command(BaseCommand):
                         'subtitle_en': menu_data.get('subtitle_en', ''),
                         'subtitle_fa': menu_data.get('subtitle_fa', ''),
                         'is_active': True,
+                        'show_images': False,
                         'display_order': menu_idx,
                         'menu_type': menu_data.get('menu_type', 'main'),
                     }

@@ -57,8 +57,14 @@ prepare_directories
 log "Waiting for database..."
 wait_for_db
 
+log "Generating migrations..."
+run_as_app python manage.py makemigrations miyanGroup miyanMadi miyanBeresht core inventory || true
+
 log "Applying database migrations..."
 run_as_app python manage.py migrate --noinput
+
+log "Seeding curated menu and inventory data..."
+run_as_app python manage.py seed_items --with-inventory || true
 
 log "Collecting static assets..."
 run_as_app python manage.py collectstatic --noinput
