@@ -65,6 +65,7 @@ run_as_app python manage.py migrate --noinput
 
 log "Seeding curated menu and inventory data..."
 run_as_app python manage.py seed_items --with-inventory || true
+run_as_app python manage.py seed_inventory_items || true
 
 log "Collecting static assets..."
 run_as_app python manage.py collectstatic --noinput
