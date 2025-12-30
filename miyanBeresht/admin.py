@@ -32,8 +32,8 @@ class BereshtMenuItemInline(admin.TabularInline):
 
 @admin.register(BereshtMenuSection)
 class BereshtMenuSectionAdmin(admin.ModelAdmin):
-    list_display = ['title_en', 'title_fa', 'menu', 'display_order', 'is_active']
-    list_filter = ['is_active', 'menu']
+    list_display = ['title_en', 'title_fa', 'menu', 'display_order', 'is_main_section', 'is_active']
+    list_filter = ['is_active', 'is_main_section', 'menu']
     inlines = [BereshtMenuItemInline]
 
 

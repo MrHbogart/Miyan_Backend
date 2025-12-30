@@ -20,7 +20,7 @@ class BereshtMenuSectionSerializer(serializers.ModelSerializer):
         model = BereshtMenuSection
         fields = [
             'id', 'title_fa', 'title_en', 'description_fa', 'description_en',
-            'display_order', 'is_active', 'items'
+            'display_order', 'is_active', 'is_main_section', 'items'
         ]
 
 

@@ -118,6 +118,7 @@ class Command(BaseCommand):
             {
                 'title_fa': 'افزودنی‌ها',
                 'title_en': 'Add-ons',
+                'is_main_section': False,
                 'items': [
                     {'name_fa': 'عسل', 'name_en': 'Honey', 'price_fa': '+30'},
                     {'name_fa': 'دی کف', 'name_en': 'Decaf', 'price_fa': '+30'},
@@ -363,13 +364,15 @@ class Command(BaseCommand):
                                 'description_fa': section_data.get('description_fa', ''),
                                 'is_active': True,
                                 'display_order': section_idx,
+                                'is_main_section': section_data.get('is_main_section', True),
                             },
                         )
                         section.description_en = section_data.get('description_en', '')
                         section.description_fa = section_data.get('description_fa', '')
                         section.is_active = True
                         section.display_order = section_idx
-                        section.save(update_fields=['description_en', 'description_fa', 'is_active', 'display_order'])
+                        section.is_main_section = section_data.get('is_main_section', True)
+                        section.save(update_fields=['description_en', 'description_fa', 'is_active', 'display_order', 'is_main_section'])
                         keep_section_ids.append(section.id)
 
                         keep_item_ids = []

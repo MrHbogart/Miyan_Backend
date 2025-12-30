@@ -32,8 +32,8 @@ class MadiMenuItemInline(admin.TabularInline):
 
 @admin.register(MadiMenuSection)
 class MadiMenuSectionAdmin(admin.ModelAdmin):
-    list_display = ['title_en', 'title_fa', 'menu', 'display_order', 'is_active']
-    list_filter = ['is_active', 'menu']
+    list_display = ['title_en', 'title_fa', 'menu', 'display_order', 'is_main_section', 'is_active']
+    list_filter = ['is_active', 'is_main_section', 'menu']
     inlines = [MadiMenuItemInline]
 
 
@@ -43,4 +43,3 @@ class MadiMenuAdmin(admin.ModelAdmin):
     list_filter = ['is_active', 'show_images']
     search_fields = ['title_en', 'title_fa', 'subtitle_en', 'subtitle_fa']
     inlines = []
-

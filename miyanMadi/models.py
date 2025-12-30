@@ -37,6 +37,11 @@ class MadiMenuSection(models.Model):
     description_en = models.TextField(blank=True, null=True, verbose_name="Description (English)")
     display_order = models.PositiveIntegerField(default=0, verbose_name="Display Order")
     is_active = models.BooleanField(default=True, verbose_name="Is Active")
+    is_main_section = models.BooleanField(
+        default=True,
+        verbose_name="Is Main Section",
+        help_text="Mark false for side item groupings like add-ons or syrups.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

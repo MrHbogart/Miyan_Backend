@@ -122,14 +122,17 @@ def transform_menu_payload(
         if not section.get('is_active'):
             continue
 
+        is_main_section = bool(section.get('is_main_section', True))
+        include_section_images = include_images and is_main_section
+
         section_items = []
         for item in section.get('items') or []:
             # include all items; availability flags removed to simplify model
             section_items.append(
                 build_menu_item_payload(
                     item,
-                    default_image=default_image if include_images else None,
-                    include_images=include_images,
+                    default_image=default_image if include_section_images else None,
+                    include_images=include_section_images,
                     request=request,
                 )
             )
@@ -138,6 +141,7 @@ def transform_menu_payload(
             {
                 'title': {'fa': section.get('title_fa'), 'en': section.get('title_en')},
                 'items': section_items,
+                'is_main_section': is_main_section,
             }
         )
 

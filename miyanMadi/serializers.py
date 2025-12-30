@@ -20,7 +20,7 @@ class MadiMenuSectionSerializer(serializers.ModelSerializer):
         model = MadiMenuSection
         fields = [
             'id', 'title_fa', 'title_en', 'description_fa', 'description_en',
-            'display_order', 'is_active', 'items'
+            'display_order', 'is_active', 'is_main_section', 'items'
         ]
 
 

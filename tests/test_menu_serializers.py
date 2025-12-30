@@ -13,6 +13,7 @@ def test_beresht_menu_serializer_shapes_public_payload():
         title_en='Beresht Menu',
         subtitle_fa='زیرعنوان',
         subtitle_en='Subtitle',
+        show_images=True,
     )
     section = BereshtMenuSection.objects.create(
         menu=menu,
@@ -56,6 +57,7 @@ def test_beresht_menu_serializer_shapes_public_payload():
     assert payload['subtitle'] == {'fa': 'زیرعنوان', 'en': 'Subtitle'}
     assert payload['show_images'] is True
     assert len(payload['sections']) == 1
+    assert payload['sections'][0]['is_main_section'] is True
     assert payload['sections'][0]['title']['en'] == 'Coffee'
     # both items in the active section are exposed (availability flags removed)
     assert len(payload['sections'][0]['items']) == 2
@@ -72,6 +74,7 @@ def test_madi_menu_serializer_handles_breakfast_and_specials():
         title_fa='منوی مادی',
         title_en='Madi Menu',
         service_hours='7am - 11am',
+        show_images=True,
     )
     section = MadiMenuSection.objects.create(
         menu=menu,
@@ -99,6 +102,7 @@ def test_madi_menu_serializer_handles_breakfast_and_specials():
     assert payload['show_images'] is True
     assert len(payload['sections']) == 1
     assert len(payload['sections'][0]['items']) == 2
+    assert payload['sections'][0]['is_main_section'] is True
 
 
 @pytest.mark.django_db
@@ -127,3 +131,32 @@ def test_menu_serializer_hides_images_when_disabled():
     assert payload['show_images'] is False
     first_item = payload['sections'][0]['items'][0]
     assert first_item['image'] is None
+
+
+@pytest.mark.django_db
+def test_menu_serializer_marks_side_sections_and_strips_media():
+    menu = BereshtMenu.objects.create(
+        title_fa='منو برشت',
+        title_en='Beresht Menu',
+        show_images=True,
+    )
+    side_section = BereshtMenuSection.objects.create(
+        menu=menu,
+        title_fa='افزودنی‌ها',
+        title_en='Add-ons',
+        is_main_section=False,
+        is_active=True,
+    )
+    BereshtMenuItem.objects.create(
+        section=side_section,
+        name_fa='سیروپ کارامل',
+        name_en='Caramel Syrup',
+        price_fa='30000',
+        price_en='30000',
+    )
+
+    payload = BereshtMenuSerializer(instance=menu).data
+    section_payload = payload['sections'][0]
+
+    assert section_payload['is_main_section'] is False
+    assert section_payload['items'][0]['image'] is None
