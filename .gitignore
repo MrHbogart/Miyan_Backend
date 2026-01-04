@@ -216,3 +216,4 @@ __pycache__/
 staticfiles/
 media/
 dbdata/
+.DS_Store
